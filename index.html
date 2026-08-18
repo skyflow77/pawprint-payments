@@ -1,891 +1,421 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PawPrint — Календарь платежей</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-
-        :root {
-            --bg: #EEF3EC;
-            --card: #FFFFFF;
-            --ink: #16302C;
-            --ink-soft: #4C635D;
-            --line: #D8E2DA;
-            --amber: #E8A33D;
-            --coral: #D9704F;
-            --green: #4B8B6F;
-            --shadow: 0 1px 2px rgba(22, 48, 44, .06), 0 8px 24px rgba(22, 48, 44, .05);
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            background: var(--bg);
-            color: var(--ink);
-            font-family: 'IBM Plex Sans', sans-serif;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        .wrap {
-            max-width: 1080px;
-            margin: 0 auto;
-            padding: 32px 24px 80px;
-        }
-
-        header {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 16px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .paw {
-            width: 34px;
-            height: 34px;
-            flex: none;
-        }
-
-        .logo-mark {
-            width: 88px;
-            height: 69px;
-            flex: none;
-            border-radius: 16px;
-            overflow: hidden;
-            display: block;
-            box-shadow: 0 1px 3px rgba(22, 48, 44, .18);
-        }
-
-        .logo-mark svg {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
-        h1 {
-            font-family: 'Fraunces', serif;
-            font-weight: 600;
-            font-size: 28px;
-            margin: 0;
-            letter-spacing: -.01em;
-        }
-
-        .sub {
-            color: var(--ink-soft);
-            font-size: 13px;
-            margin-top: 2px;
-        }
-
-        .toolbar {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        button {
-            font-family: inherit;
-            font-size: 13.5px;
-            font-weight: 500;
-            cursor: pointer;
-            border-radius: 8px;
-            border: 1px solid var(--line);
-            background: var(--card);
-            color: var(--ink);
-            padding: 9px 14px;
-            transition: .15s ease;
-        }
-
-        button:hover {
-            border-color: var(--ink-soft);
-        }
-
-        button.primary {
-            background: var(--ink);
-            color: #fff;
-            border-color: var(--ink);
-        }
-
-        button.primary:hover {
-            background: #0e211d;
-        }
-
-        button.ghost {
-            background: transparent;
-            border-color: transparent;
-            color: var(--ink-soft);
-        }
-
-        button.ghost:hover {
-            color: var(--ink);
-            background: rgba(0, 0, 0, .03);
-        }
-
-        button.small {
-            padding: 6px 10px;
-            font-size: 12.5px;
-        }
-
-        button.icon-btn {
-            padding: 9px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-color: var(--line);
-        }
-
-        button.icon-btn:hover {
-            color: var(--ink);
-            border-color: var(--ink-soft);
-        }
-
-        .seg {
-            display: flex;
-            background: var(--card);
-            border: 1px solid var(--line);
-            border-radius: 9px;
-            padding: 3px;
-            gap: 2px;
-        }
-
-        .seg button {
-            border: none;
-            background: transparent;
-            padding: 6px 12px;
-            border-radius: 6px;
-        }
-
-        .seg button.active {
-            background: var(--ink);
-            color: #fff;
-        }
-
-        .summary {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin: 24px 0 28px;
-        }
-
-        .stat {
-            background: var(--card);
-            border: 1px solid var(--line);
-            border-radius: 12px;
-            padding: 16px 18px;
-            box-shadow: var(--shadow);
-        }
-
-        .stat.balance {
-            background: #16302C;
-            border-color: #16302C;
-        }
-
-        .stat.balance .label {
-            color: #A9C2BB;
-        }
-
-        .stat.balance .val {
-            color: #F4EFE4;
-        }
-
-        .stat.balance .hint {
-            color: #7C978F;
-        }
-
-        .stat .label {
-            font-size: 11.5px;
-            text-transform: uppercase;
-            letter-spacing: .06em;
-            color: var(--ink-soft);
-            font-weight: 600;
-        }
-
-        .stat .val {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 22px;
-            font-weight: 600;
-            margin-top: 6px;
-        }
-
-        .stat.out .val {
-            color: var(--coral);
-        }
-
-        .stat.in .val {
-            color: var(--green);
-        }
-
-        .stat .hint {
-            font-size: 11px;
-            color: var(--ink-soft);
-            margin-top: 3px;
-        }
-
-        .panel {
-            background: var(--card);
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        /* list view */
-        .month-group {
-            padding: 18px 20px 6px;
-        }
-
-        .month-title {
-            font-family: 'Fraunces', serif;
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--ink-soft);
-            text-transform: capitalize;
-            margin: 0 0 4px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        thead th {
-            text-align: left;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: .06em;
-            color: var(--ink-soft);
-            padding: 8px 20px;
-            border-bottom: 1px solid var(--line);
-            font-weight: 600;
-        }
-
-        tbody td {
-            padding: 12px 20px;
-            border-bottom: 1px solid var(--line);
-            font-size: 13.5px;
-            vertical-align: middle;
-        }
-
-        tbody td:first-child {
-            white-space: nowrap;
-        }
-
-        tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        tbody tr:hover {
-            background: #FAFBF9;
-        }
-
-        .amt {
-            font-family: 'IBM Plex Mono', monospace;
-            font-weight: 600;
-            text-align: right;
-        }
-
-        .amt.out {
-            color: var(--coral);
-        }
-
-        .amt.in {
-            color: var(--green);
-        }
-
-        .tag {
-            display: inline-block;
-            font-size: 11px;
-            padding: 3px 9px;
-            border-radius: 999px;
-            font-weight: 500;
-            background: #EEF3EC;
-            color: var(--ink-soft);
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 11.5px;
-            font-weight: 600;
-            padding: 3px 9px;
-            border-radius: 999px;
-        }
-
-        .badge.paid {
-            background: #E4F1EA;
-            color: var(--green);
-        }
-
-        .badge.pending {
-            background: #FBF1E0;
-            color: #A8721F;
-        }
-
-        .badge.overdue {
-            background: #FBE7E0;
-            color: var(--coral);
-        }
-
-        .row-actions {
-            display: flex;
-            gap: 6px;
-            justify-content: flex-end;
-        }
-
-        .empty {
-            padding: 60px 20px;
-            text-align: center;
-            color: var(--ink-soft);
-        }
-
-        .empty .paw {
-            width: 40px;
-            height: 40px;
-            opacity: .35;
-            margin-bottom: 10px;
-        }
-
-        /* calendar view */
-        .cal-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--line);
-        }
-
-        .cal-head .title {
-            font-family: 'Fraunces', serif;
-            font-size: 17px;
-            font-weight: 600;
-            text-transform: capitalize;
-        }
-
-        .cal-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-        }
-
-        .cal-dow {
-            padding: 8px 6px;
-            font-size: 10.5px;
-            text-transform: uppercase;
-            color: var(--ink-soft);
-            text-align: center;
-            border-bottom: 1px solid var(--line);
-            font-weight: 600;
-        }
-
-        .cal-cell {
-            min-height: 88px;
-            border-right: 1px solid var(--line);
-            border-bottom: 1px solid var(--line);
-            padding: 6px 6px;
-            position: relative;
-        }
-
-        .cal-cell:nth-child(7n) {
-            border-right: none;
-        }
-
-        .cal-cell.mute {
-            background: #FAFBF9;
-            color: #C4CDC7;
-        }
-
-        .cal-cell.today {
-            background: #FDF7EC;
-        }
-
-        .cal-num {
-            font-size: 11.5px;
-            font-weight: 600;
-            color: var(--ink-soft);
-        }
-
-        .cal-cell.today .cal-num {
-            color: var(--amber);
-            font-weight: 700;
-        }
-
-        .cal-item {
-            margin-top: 4px;
-            font-size: 10.5px;
-            padding: 2px 6px;
-            border-radius: 5px;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            cursor: pointer;
-        }
-
-        .cal-item.out {
-            background: #FBE7E0;
-            color: #A94F30;
-        }
-
-        .cal-item.in {
-            background: #E4F1EA;
-            color: #357257;
-        }
-
-        .cal-item.paid {
-            opacity: .5;
-            text-decoration: line-through;
-        }
-
-        /* modal */
-        .overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(22, 48, 44, .35);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            z-index: 50;
-        }
-
-        .modal {
-            background: var(--card);
-            border-radius: 16px;
-            width: 100%;
-            max-width: 440px;
-            padding: 26px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
-        }
-
-        .modal h2 {
-            font-family: 'Fraunces', serif;
-            font-size: 19px;
-            margin: 0 0 18px;
-        }
-
-        .field {
-            margin-bottom: 14px;
-        }
-
-        .field label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--ink-soft);
-            margin-bottom: 5px;
-        }
-
-        .field input,
-        .field select {
-            width: 100%;
-            padding: 9px 11px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 13.5px;
-            background: #fff;
-            color: var(--ink);
-        }
-
-        .field input:focus,
-        .field select:focus {
-            outline: 2px solid var(--amber);
-            outline-offset: 1px;
-            border-color: transparent;
-        }
-
-        .row2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .modal-actions {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-            gap: 10px;
-        }
-
-        .modal-actions .left {
-            display: flex;
-            gap: 8px;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--ink);
-            color: #fff;
-            padding: 10px 18px;
-            border-radius: 9px;
-            font-size: 13px;
-            opacity: 0;
-            pointer-events: none;
-            transition: .2s ease;
-            z-index: 60;
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(-4px);
-        }
-
-        .shared-note {
-            font-size: 11.5px;
-            color: var(--ink-soft);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 2px;
-        }
-
-        .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--green);
-        }
-
-        .dot.off {
-            background: var(--coral);
-        }
-
-        .config-warning {
-            background: #FBE7E0;
-            border: 1px solid #EFC0AC;
-            color: #7A3A24;
-            padding: 14px 18px;
-            border-radius: 12px;
-            font-size: 13px;
-            margin-bottom: 20px;
-            line-height: 1.5;
-        }
-
-        .config-warning code {
-            background: rgba(0, 0, 0, .06);
-            padding: 1px 6px;
-            border-radius: 5px;
-            font-family: 'IBM Plex Mono', monospace;
-        }
-
-        @media (max-width:640px) {
-            .summary {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            thead {
-                display: none;
-            }
-
-            tbody td {
-                display: block;
-                padding: 4px 20px;
-            }
-
-            tbody tr {
-                display: block;
-                padding: 10px 0;
-                border-bottom: 1px solid var(--line);
-            }
-
-            .amt {
-                text-align: left;
-            }
-
-            .row-actions {
-                justify-content: flex-start;
-                margin-top: 6px;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PawPrint — Календарь платежей</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#EEF3EC;
+    --card:#FFFFFF;
+    --ink:#16302C;
+    --ink-soft:#4C635D;
+    --line:#D8E2DA;
+    --amber:#E8A33D;
+    --coral:#D9704F;
+    --green:#4B8B6F;
+    --shadow: 0 1px 2px rgba(22,48,44,.06), 0 8px 24px rgba(22,48,44,.05);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:32px 24px 80px;}
+
+  header{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:24px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:center; gap:12px;}
+  .paw{width:34px; height:34px; flex:none;}
+  .logo-mark{
+    width:88px; height:69px; flex:none; border-radius:16px; overflow:hidden;
+    display:block; box-shadow:0 1px 3px rgba(22,48,44,.18);
+  }
+  .logo-mark svg{display:block; width:100%; height:100%;}
+  h1{
+    font-family:'Fraunces', serif; font-weight:600; font-size:28px; margin:0;
+    letter-spacing:-.01em;
+  }
+  .sub{color:var(--ink-soft); font-size:13px; margin-top:2px;}
+
+  .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  button{
+    font-family:inherit; font-size:13.5px; font-weight:500; cursor:pointer;
+    border-radius:8px; border:1px solid var(--line); background:var(--card);
+    color:var(--ink); padding:9px 14px; transition:.15s ease;
+  }
+  button:hover{border-color:var(--ink-soft);}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink);}
+  button.primary:hover{background:#0e211d;}
+  button.ghost{background:transparent; border-color:transparent; color:var(--ink-soft);}
+  button.ghost:hover{color:var(--ink); background:rgba(0,0,0,.03);}
+  button.small{padding:6px 10px; font-size:12.5px;}
+  button.icon-btn{padding:9px; display:inline-flex; align-items:center; justify-content:center; border-color:var(--line);}
+  button.icon-btn:hover{color:var(--ink); border-color:var(--ink-soft);}
+  .seg{display:flex; background:var(--card); border:1px solid var(--line); border-radius:9px; padding:3px; gap:2px;}
+  .seg button{border:none; background:transparent; padding:6px 12px; border-radius:6px;}
+  .seg button.active{background:var(--ink); color:#fff;}
+
+  .summary{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:24px 0 28px;
+  }
+  .stat{
+    background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px;
+    box-shadow:var(--shadow);
+  }
+  .stat.balance{background:#16302C; border-color:#16302C;}
+  .stat.balance .label{color:#A9C2BB;}
+  .stat.balance .val{color:#F4EFE4;}
+  .stat.balance .hint{color:#7C978F;}
+  .stat .label{font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); font-weight:600;}
+  .stat .val{font-family:'IBM Plex Mono', monospace; font-size:22px; font-weight:600; margin-top:6px;}
+  .stat.out .val{color:var(--coral);}
+  .stat.in .val{color:var(--green);}
+  .stat .hint{font-size:11px; color:var(--ink-soft); margin-top:3px;}
+
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); overflow:hidden;}
+
+  /* list view */
+  .month-group{padding:18px 20px 6px;}
+  .month-title{font-family:'Fraunces', serif; font-size:15px; font-weight:600; color:var(--ink-soft); text-transform:capitalize; margin:0 0 4px;}
+  table{width:100%; border-collapse:collapse;}
+  thead th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--ink-soft); padding:8px 20px; border-bottom:1px solid var(--line); font-weight:600;
+  }
+  tbody td{padding:12px 20px; border-bottom:1px solid var(--line); font-size:13.5px; vertical-align:middle;}
+  tbody td:first-child{white-space:nowrap;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FAFBF9;}
+  .amt{font-family:'IBM Plex Mono', monospace; font-weight:600; text-align:right;}
+  .amt.out{color:var(--coral);}
+  .amt.in{color:var(--green);}
+  .tag{
+    display:inline-block; font-size:11px; padding:3px 9px; border-radius:999px; font-weight:500;
+    background:#EEF3EC; color:var(--ink-soft);
+  }
+  .badge{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:999px;}
+  .badge.paid{background:#E4F1EA; color:var(--green);}
+  .badge.pending{background:#FBF1E0; color:#A8721F;}
+  .badge.overdue{background:#FBE7E0; color:var(--coral);}
+  .row-actions{display:flex; gap:6px; justify-content:flex-end;}
+  .empty{padding:60px 20px; text-align:center; color:var(--ink-soft);}
+  .empty .paw{width:40px;height:40px;opacity:.35; margin-bottom:10px;}
+
+  /* calendar view */
+  .cal-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line);}
+  .cal-head .title{font-family:'Fraunces', serif; font-size:17px; font-weight:600; text-transform:capitalize;}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr);}
+  .cal-dow{padding:8px 6px; font-size:10.5px; text-transform:uppercase; color:var(--ink-soft); text-align:center; border-bottom:1px solid var(--line); font-weight:600;}
+  .cal-cell{
+    min-height:88px; border-right:1px solid var(--line); border-bottom:1px solid var(--line);
+    padding:6px 6px; position:relative;
+  }
+  .cal-cell:nth-child(7n){border-right:none;}
+  .cal-cell.mute{background:#FAFBF9; color:#C4CDC7;}
+  .cal-cell.today{background:#FDF7EC;}
+  .cal-num{font-size:11.5px; font-weight:600; color:var(--ink-soft);}
+  .cal-cell.today .cal-num{color:var(--amber); font-weight:700;}
+  .cal-item{
+    margin-top:4px; font-size:10.5px; padding:2px 6px; border-radius:5px; font-weight:500;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;
+  }
+  .cal-item.out{background:#FBE7E0; color:#A94F30;}
+  .cal-item.in{background:#E4F1EA; color:#357257;}
+  .cal-item.paid{opacity:.5; text-decoration:line-through;}
+
+  /* modal */
+  .overlay{position:fixed; inset:0; background:rgba(22,48,44,.35); display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;}
+  .modal{background:var(--card); border-radius:16px; width:100%; max-width:440px; padding:26px; box-shadow:0 20px 60px rgba(0,0,0,.25);}
+  .modal h2{font-family:'Fraunces', serif; font-size:19px; margin:0 0 18px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:5px;}
+  .field input, .field select{
+    width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:8px;
+    font-family:inherit; font-size:13.5px; background:#fff; color:var(--ink);
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--amber); outline-offset:1px; border-color:transparent;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .modal-actions{display:flex; justify-content:space-between; margin-top:20px; gap:10px;}
+  .modal-actions .left{display:flex; gap:8px;}
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:#fff; padding:10px 18px; border-radius:9px; font-size:13px;
+    opacity:0; pointer-events:none; transition:.2s ease; z-index:60;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px);}
+
+  .shared-note{font-size:11.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; margin-top:2px;}
+  .dot{width:6px; height:6px; border-radius:50%; background:var(--green);}
+  .dot.off{background:var(--coral);}
+  .config-warning{background:#FBE7E0; border:1px solid #EFC0AC; color:#7A3A24; padding:14px 18px; border-radius:12px; font-size:13px; margin-bottom:20px; line-height:1.5;}
+  .config-warning code{background:rgba(0,0,0,.06); padding:1px 6px; border-radius:5px; font-family:'IBM Plex Mono', monospace;}
+
+  @media (max-width:640px){
+    .summary{grid-template-columns:repeat(2,1fr);}
+    thead{display:none;}
+    tbody td{display:block; padding:4px 20px;}
+    tbody tr{display:block; padding:10px 0; border-bottom:1px solid var(--line);}
+    .amt{text-align:left;}
+    .row-actions{justify-content:flex-start; margin-top:6px;}
+  }
+</style>
 </head>
-
 <body>
-    <div class="wrap">
+<div class="wrap">
 
-        <header>
-            <div class="brand">
-                <span class="logo-mark">
-                    <svg viewBox="0 0 1021 807" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="1021" height="807" fill="#46C3EB" />
-                        <path
-                            d="M499.511 321.917C495.673 323.217 494.211 324.43 491.652 328.416C490.008 330.928 489.734 331.102 488.454 329.802C487.632 329.109 485.256 327.722 483.063 326.856C478.86 325.209 473.835 325.383 468.444 327.462C465.885 328.502 461.956 333.441 462.779 334.654C462.961 335.001 462.779 335.521 462.23 335.867C461.773 336.127 461.317 337.86 461.317 339.593V342.799L456.474 342.886C448.707 342.886 443.407 347.219 440.758 355.45C439.022 360.909 439.296 367.321 441.763 376.593C443.407 382.745 448.433 395.049 450.078 397.042C450.717 397.735 451.266 398.775 451.266 399.295C451.266 399.815 452.271 401.981 453.55 404.061C454.829 406.227 455.926 408.913 455.926 410.04C456.108 412.379 454.92 424.857 454.464 425.55C454.281 425.81 453.915 428.149 453.55 430.749C453.184 433.348 452.636 437.334 452.179 439.674C451.631 443.227 451.814 443.92 453.184 444.7C454.555 445.393 454.92 445.133 455.286 443.573C456.474 438.374 458.484 418.705 458.667 411.599C458.758 407.7 458.119 405.447 455.56 400.335C453.824 396.782 451.357 391.757 450.078 389.157C445.144 379.192 442.22 363.942 443.864 357.27C445.235 351.898 450.352 346.872 455.103 346.179C457.936 345.745 458.85 346.005 461.408 348.345C466.251 352.764 466.89 351.724 465.154 342.539C464.697 340.113 464.606 338.034 465.063 338.034C465.428 338.034 465.977 336.907 466.342 335.521C467.073 332.401 468.992 330.755 473.378 329.455C480.048 327.376 488.18 331.535 488.272 337.081C488.272 340.287 490.739 338.554 493.114 333.441C498.597 322.09 509.653 320.964 516.78 331.015C519.338 334.568 519.704 342.366 517.511 344.099C516.78 344.706 516.14 345.486 516.14 345.919C516.14 347.305 519.521 346.699 521.075 345.052C521.988 344.099 523.907 342.886 525.46 342.279C529.389 340.72 533.501 343.059 536.517 348.345C539.532 353.631 540.172 356.837 540.08 366.195C539.989 376.16 538.801 383.352 535.329 394.009C531.674 405.187 531.674 404.927 533.593 412.553C536.882 425.81 541.268 441.927 541.816 442.36C542.09 442.707 542.913 442.187 543.735 441.407C544.923 440.021 544.74 438.634 541.908 428.843C539.989 422.084 538.344 418.011 537.796 418.358C537.248 418.618 537.156 418.445 537.522 417.838C537.887 417.318 537.339 414.199 536.334 410.906C534.415 405.014 534.415 405.014 536.242 401.721C537.248 399.815 538.07 397.649 538.07 396.956C538.07 396.176 538.344 395.223 538.71 394.876C539.075 394.616 539.441 393.836 539.623 393.23C539.715 392.623 540.72 389.07 541.725 385.258C545.837 369.834 544.923 354.064 539.532 345.919C535.42 339.767 528.75 336.647 524.455 338.814C522.719 339.767 522.628 339.593 522.719 336.994C522.719 335.434 521.988 332.575 520.892 330.668C516.506 322.437 508.1 318.971 499.511 321.917Z"
-                            fill="white" />
-                        <path
-                            d="M496.953 335.434C493.937 339.42 494.029 344.359 497.135 347.219C500.059 350.078 503.806 350.598 507.552 348.692C513.308 345.832 514.953 339.853 511.298 335.781C509.562 333.875 508.191 333.355 504.08 333.008C499.237 332.661 498.963 332.748 496.953 335.434ZM501.629 346.527C502.086 347.134 508.962 347.877 506.794 343.153C508.165 347.572 502.892 347.825 499.328 344.446C496.039 341.413 495.311 346.614 500.154 346.527C501.707 346.527 501.081 346.007 501.629 346.527Z"
-                            fill="white" fill-opacity="0.8" />
-                        <path
-                            d="M473.012 340.027C467.986 344.099 467.53 349.385 472.007 352.764C475.845 355.624 480.961 355.104 484.708 351.551C487.814 348.605 488.911 344.272 487.083 341.846C484.159 337.86 476.941 336.821 473.012 340.027ZM480.968 351.926C483.527 354.179 484.708 346.439 482.149 349.038C478.586 352.678 471.376 349.181 471.376 344.502C471.376 348.552 474.896 350.685 476.541 351.551C477.181 351.898 479.78 350.973 480.968 351.926Z"
-                            fill="white" fill-opacity="0.8" />
-                        <path
-                            d="M519.978 352.764C515.592 356.663 516.78 363.855 522.171 365.761C525.278 366.888 530.852 365.935 533.045 363.942C535.238 361.949 535.512 356.23 533.41 354.41C529.116 350.684 523.268 349.905 519.978 352.764ZM527.455 358C525.881 362.989 529.557 361.033 527.455 358C525.079 359.646 525.918 364.028 523.725 362.989C521.806 362.122 526.162 365.75 525.979 363.67C525.614 359.944 523.709 363.942 527.455 363.942C529.648 363.942 526.358 356.44 527.455 358Z"
-                            fill="white" fill-opacity="0.8" />
-                        <path
-                            d="M455.377 357.01C451.54 358.57 448.524 362.383 448.524 365.849C448.524 370.441 453.276 375.293 457.936 375.293C461.591 375.293 466.799 372.867 466.799 371.134C466.799 370.528 467.165 370.181 467.621 370.441C468.626 371.048 469.54 368.881 469.54 365.762C469.54 362.643 465.794 358.31 462.504 357.704C461.043 357.444 459.306 357.01 458.575 356.75C457.844 356.577 456.382 356.664 455.377 357.01ZM462.961 370.824C463.601 370.91 463.784 361.17 463.601 361.516C463.327 361.776 461.053 363.468 461.783 364.075C450.715 368.124 466.159 368.188 462.961 370.094C459.032 372.347 457.113 372.261 454.464 369.661C451.54 366.975 452.865 374.358 455.88 371.499C457.617 369.852 455.437 372.415 457.356 372.848C458.727 373.195 462.322 370.737 462.961 370.824Z"
-                            fill="white" fill-opacity="0.8" />
-                        <path
-                            d="M489.368 358.397C483.977 360.303 481.419 362.556 473.378 372.261C469.449 377.026 468.444 385.518 471.276 389.071C474.109 392.537 482.789 392.883 485.257 389.591C485.622 389.157 485.988 388.984 485.988 389.331C485.988 389.677 487.906 388.897 490.373 387.511C496.404 384.045 501.704 383.525 507.734 385.691C514.222 388.031 518.059 387.944 521.075 385.258C522.902 383.698 523.45 382.312 523.45 379.626C523.45 372.261 517.146 365.329 506.181 360.476C499.054 357.357 494.028 356.75 489.368 358.397ZM502.367 382.225C512.418 386.558 507.734 377.773 507.734 382.972C507.643 387.738 516.049 384.738 508.831 382.225C506.09 381.272 502.526 380.492 500.881 380.492C497.409 380.492 489.551 383.265 485.713 385.865C484.251 386.818 481.236 387.858 479.043 388.117C475.48 388.464 476.162 387.076 475.066 384.996C473.59 389.046 479.317 392.277 480.231 389.071C480.87 386.818 484.708 387.598 485.257 387.511C485.713 387.338 486.872 386.866 486.872 386.346C486.872 385.306 488.192 387.008 491.299 384.322C495.502 380.596 494.988 382.972 502.367 382.225Z"
-                            fill="white" fill-opacity="0.8" />
-                        <path
-                            d="M504.719 403.715C502.343 404.581 498.049 405.101 492.658 405.188C485.988 405.188 484.708 405.361 486.17 406.141C488.089 407.094 496.495 407.181 500.333 406.227C502.892 405.621 510.475 402.328 509.288 402.328C508.831 402.328 506.729 402.935 504.719 403.715Z"
-                            fill="white" />
-                        <path
-                            d="M238.503 389.584C238.503 394.318 237.416 398.665 235.243 402.623C233.07 406.504 229.733 409.647 225.231 412.053C220.729 414.459 215.141 415.662 208.467 415.662H196.126V445H176.218V363.273H208.467C214.986 363.273 220.497 364.398 224.998 366.649C229.5 368.9 232.876 372.004 235.127 375.963C237.378 379.921 238.503 384.461 238.503 389.584ZM206.953 399.829C210.756 399.829 213.589 398.936 215.452 397.151C217.314 395.366 218.246 392.844 218.246 389.584C218.246 386.324 217.314 383.802 215.452 382.017C213.589 380.231 210.756 379.339 206.953 379.339H196.126V399.829H206.953ZM243.163 412.402C243.163 405.727 244.404 399.868 246.888 394.823C249.449 389.778 252.903 385.897 257.249 383.181C261.596 380.464 266.447 379.106 271.802 379.106C276.381 379.106 280.378 380.037 283.793 381.9C287.286 383.763 289.964 386.208 291.826 389.235V380.037H311.734V445H291.826V435.803C289.886 438.83 287.169 441.275 283.677 443.137C280.262 445 276.265 445.931 271.686 445.931C266.408 445.931 261.596 444.573 257.249 441.857C252.903 439.063 249.449 435.143 246.888 430.098C244.404 424.976 243.163 419.077 243.163 412.402ZM291.826 412.519C291.826 407.551 290.429 403.632 287.635 400.76C284.919 397.889 281.581 396.453 277.623 396.453C273.665 396.453 270.289 397.889 267.494 400.76C264.778 403.554 263.42 407.435 263.42 412.402C263.42 417.37 264.778 421.328 267.494 424.277C270.289 427.149 273.665 428.585 277.623 428.585C281.581 428.585 284.919 427.149 287.635 424.277C290.429 421.405 291.826 417.486 291.826 412.519ZM417.643 380.037L400.064 445H378.06L367.815 402.856L357.221 445H335.334L317.638 380.037H337.546L346.743 426.489L357.687 380.037H378.759L389.819 426.256L398.899 380.037H417.643Z"
-                            fill="white" />
-                        <path
-                            d="M634.094 389.584C634.094 394.318 633.007 398.665 630.834 402.623C628.661 406.504 625.323 409.647 620.822 412.053C616.32 414.459 610.732 415.662 604.057 415.662H591.717V445H571.809V363.273H604.057C610.577 363.273 616.087 364.398 620.589 366.649C625.091 368.9 628.467 372.004 630.718 375.963C632.968 379.921 634.094 384.461 634.094 389.584ZM602.544 399.829C606.347 399.829 609.18 398.936 611.043 397.151C612.905 395.366 613.837 392.844 613.837 389.584C613.837 386.324 612.905 383.802 611.043 382.017C609.18 380.231 606.347 379.339 602.544 379.339H591.717V399.829H602.544ZM662.62 390.864C664.948 387.294 667.858 384.5 671.351 382.482C674.844 380.387 678.724 379.339 682.993 379.339V400.411H677.521C672.554 400.411 668.829 401.498 666.345 403.671C663.861 405.766 662.62 409.492 662.62 414.847V445H642.712V380.037H662.62V390.864ZM700.775 373.285C697.282 373.285 694.41 372.276 692.159 370.258C689.986 368.162 688.9 365.601 688.9 362.574C688.9 359.47 689.986 356.909 692.159 354.891C694.41 352.795 697.282 351.747 700.775 351.747C704.19 351.747 706.984 352.795 709.157 354.891C711.408 356.909 712.533 359.47 712.533 362.574C712.533 365.601 711.408 368.162 709.157 370.258C706.984 372.276 704.19 373.285 700.775 373.285ZM710.67 380.037V445H690.762V380.037H710.67ZM762.934 379.339C770.54 379.339 776.594 381.822 781.096 386.79C785.675 391.679 787.964 398.432 787.964 407.047V445H768.173V409.725C768.173 405.378 767.048 402.002 764.797 399.596C762.546 397.19 759.519 395.987 755.716 395.987C751.913 395.987 748.886 397.19 746.635 399.596C744.384 402.002 743.259 405.378 743.259 409.725V445H723.351V380.037H743.259V388.652C745.277 385.781 747.993 383.53 751.408 381.9C754.823 380.193 758.665 379.339 762.934 379.339ZM836.259 428.119V445H826.13C818.912 445 813.285 443.254 809.249 439.761C805.213 436.191 803.195 430.409 803.195 422.414V396.569H795.279V380.037H803.195V364.204H823.103V380.037H836.142V396.569H823.103V422.647C823.103 424.588 823.569 425.985 824.5 426.838C825.432 427.692 826.984 428.119 829.157 428.119H836.259Z"
-                            fill="white" />
-                    </svg>
-                </span>
-                <div>
-                    <h1>Календарь платежей</h1>
-                    <div class="sub">PawPrint · операционные выплаты и поступления</div>
-                </div>
-            </div>
-            <div class="toolbar">
-                <div class="seg" id="viewSeg">
-                    <button data-view="list" class="active">Список</button>
-                    <button data-view="calendar">Календарь</button>
-                </div>
-                <button class="ghost icon-btn" id="settingsBtn" title="Настройки дэшборда" aria-label="Настройки">
-                    <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor"
-                        stroke-width="1.6">
-                        <circle cx="10" cy="10" r="2.6" />
-                        <path
-                            d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4M15.3 15.3l-1.4-1.4M6.1 6.1L4.7 4.7" />
-                    </svg>
-                </button>
-                <button class="primary" id="addBtn">+ Платёж</button>
-            </div>
-        </header>
-
-        <div id="configWarning"></div>
-        <div class="summary" id="summary"></div>
-
-        <div class="panel" id="panel"></div>
-
-        <div class="shared-note" style="margin-top:14px;">
-            <span class="dot" id="connDot"></span> <span id="connText">Подключение к базе…</span>
-        </div>
-
+  <header>
+    <div class="brand">
+      <span class="logo-mark">
+        <svg viewBox="0 0 1021 807" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1021" height="807" fill="#46C3EB"/>
+          <path d="M499.511 321.917C495.673 323.217 494.211 324.43 491.652 328.416C490.008 330.928 489.734 331.102 488.454 329.802C487.632 329.109 485.256 327.722 483.063 326.856C478.86 325.209 473.835 325.383 468.444 327.462C465.885 328.502 461.956 333.441 462.779 334.654C462.961 335.001 462.779 335.521 462.23 335.867C461.773 336.127 461.317 337.86 461.317 339.593V342.799L456.474 342.886C448.707 342.886 443.407 347.219 440.758 355.45C439.022 360.909 439.296 367.321 441.763 376.593C443.407 382.745 448.433 395.049 450.078 397.042C450.717 397.735 451.266 398.775 451.266 399.295C451.266 399.815 452.271 401.981 453.55 404.061C454.829 406.227 455.926 408.913 455.926 410.04C456.108 412.379 454.92 424.857 454.464 425.55C454.281 425.81 453.915 428.149 453.55 430.749C453.184 433.348 452.636 437.334 452.179 439.674C451.631 443.227 451.814 443.92 453.184 444.7C454.555 445.393 454.92 445.133 455.286 443.573C456.474 438.374 458.484 418.705 458.667 411.599C458.758 407.7 458.119 405.447 455.56 400.335C453.824 396.782 451.357 391.757 450.078 389.157C445.144 379.192 442.22 363.942 443.864 357.27C445.235 351.898 450.352 346.872 455.103 346.179C457.936 345.745 458.85 346.005 461.408 348.345C466.251 352.764 466.89 351.724 465.154 342.539C464.697 340.113 464.606 338.034 465.063 338.034C465.428 338.034 465.977 336.907 466.342 335.521C467.073 332.401 468.992 330.755 473.378 329.455C480.048 327.376 488.18 331.535 488.272 337.081C488.272 340.287 490.739 338.554 493.114 333.441C498.597 322.09 509.653 320.964 516.78 331.015C519.338 334.568 519.704 342.366 517.511 344.099C516.78 344.706 516.14 345.486 516.14 345.919C516.14 347.305 519.521 346.699 521.075 345.052C521.988 344.099 523.907 342.886 525.46 342.279C529.389 340.72 533.501 343.059 536.517 348.345C539.532 353.631 540.172 356.837 540.08 366.195C539.989 376.16 538.801 383.352 535.329 394.009C531.674 405.187 531.674 404.927 533.593 412.553C536.882 425.81 541.268 441.927 541.816 442.36C542.09 442.707 542.913 442.187 543.735 441.407C544.923 440.021 544.74 438.634 541.908 428.843C539.989 422.084 538.344 418.011 537.796 418.358C537.248 418.618 537.156 418.445 537.522 417.838C537.887 417.318 537.339 414.199 536.334 410.906C534.415 405.014 534.415 405.014 536.242 401.721C537.248 399.815 538.07 397.649 538.07 396.956C538.07 396.176 538.344 395.223 538.71 394.876C539.075 394.616 539.441 393.836 539.623 393.23C539.715 392.623 540.72 389.07 541.725 385.258C545.837 369.834 544.923 354.064 539.532 345.919C535.42 339.767 528.75 336.647 524.455 338.814C522.719 339.767 522.628 339.593 522.719 336.994C522.719 335.434 521.988 332.575 520.892 330.668C516.506 322.437 508.1 318.971 499.511 321.917Z" fill="white"/>
+          <path d="M496.953 335.434C493.937 339.42 494.029 344.359 497.135 347.219C500.059 350.078 503.806 350.598 507.552 348.692C513.308 345.832 514.953 339.853 511.298 335.781C509.562 333.875 508.191 333.355 504.08 333.008C499.237 332.661 498.963 332.748 496.953 335.434ZM501.629 346.527C502.086 347.134 508.962 347.877 506.794 343.153C508.165 347.572 502.892 347.825 499.328 344.446C496.039 341.413 495.311 346.614 500.154 346.527C501.707 346.527 501.081 346.007 501.629 346.527Z" fill="white" fill-opacity="0.8"/>
+          <path d="M473.012 340.027C467.986 344.099 467.53 349.385 472.007 352.764C475.845 355.624 480.961 355.104 484.708 351.551C487.814 348.605 488.911 344.272 487.083 341.846C484.159 337.86 476.941 336.821 473.012 340.027ZM480.968 351.926C483.527 354.179 484.708 346.439 482.149 349.038C478.586 352.678 471.376 349.181 471.376 344.502C471.376 348.552 474.896 350.685 476.541 351.551C477.181 351.898 479.78 350.973 480.968 351.926Z" fill="white" fill-opacity="0.8"/>
+          <path d="M519.978 352.764C515.592 356.663 516.78 363.855 522.171 365.761C525.278 366.888 530.852 365.935 533.045 363.942C535.238 361.949 535.512 356.23 533.41 354.41C529.116 350.684 523.268 349.905 519.978 352.764ZM527.455 358C525.881 362.989 529.557 361.033 527.455 358C525.079 359.646 525.918 364.028 523.725 362.989C521.806 362.122 526.162 365.75 525.979 363.67C525.614 359.944 523.709 363.942 527.455 363.942C529.648 363.942 526.358 356.44 527.455 358Z" fill="white" fill-opacity="0.8"/>
+          <path d="M455.377 357.01C451.54 358.57 448.524 362.383 448.524 365.849C448.524 370.441 453.276 375.293 457.936 375.293C461.591 375.293 466.799 372.867 466.799 371.134C466.799 370.528 467.165 370.181 467.621 370.441C468.626 371.048 469.54 368.881 469.54 365.762C469.54 362.643 465.794 358.31 462.504 357.704C461.043 357.444 459.306 357.01 458.575 356.75C457.844 356.577 456.382 356.664 455.377 357.01ZM462.961 370.824C463.601 370.91 463.784 361.17 463.601 361.516C463.327 361.776 461.053 363.468 461.783 364.075C450.715 368.124 466.159 368.188 462.961 370.094C459.032 372.347 457.113 372.261 454.464 369.661C451.54 366.975 452.865 374.358 455.88 371.499C457.617 369.852 455.437 372.415 457.356 372.848C458.727 373.195 462.322 370.737 462.961 370.824Z" fill="white" fill-opacity="0.8"/>
+          <path d="M489.368 358.397C483.977 360.303 481.419 362.556 473.378 372.261C469.449 377.026 468.444 385.518 471.276 389.071C474.109 392.537 482.789 392.883 485.257 389.591C485.622 389.157 485.988 388.984 485.988 389.331C485.988 389.677 487.906 388.897 490.373 387.511C496.404 384.045 501.704 383.525 507.734 385.691C514.222 388.031 518.059 387.944 521.075 385.258C522.902 383.698 523.45 382.312 523.45 379.626C523.45 372.261 517.146 365.329 506.181 360.476C499.054 357.357 494.028 356.75 489.368 358.397ZM502.367 382.225C512.418 386.558 507.734 377.773 507.734 382.972C507.643 387.738 516.049 384.738 508.831 382.225C506.09 381.272 502.526 380.492 500.881 380.492C497.409 380.492 489.551 383.265 485.713 385.865C484.251 386.818 481.236 387.858 479.043 388.117C475.48 388.464 476.162 387.076 475.066 384.996C473.59 389.046 479.317 392.277 480.231 389.071C480.87 386.818 484.708 387.598 485.257 387.511C485.713 387.338 486.872 386.866 486.872 386.346C486.872 385.306 488.192 387.008 491.299 384.322C495.502 380.596 494.988 382.972 502.367 382.225Z" fill="white" fill-opacity="0.8"/>
+          <path d="M504.719 403.715C502.343 404.581 498.049 405.101 492.658 405.188C485.988 405.188 484.708 405.361 486.17 406.141C488.089 407.094 496.495 407.181 500.333 406.227C502.892 405.621 510.475 402.328 509.288 402.328C508.831 402.328 506.729 402.935 504.719 403.715Z" fill="white"/>
+          <path d="M238.503 389.584C238.503 394.318 237.416 398.665 235.243 402.623C233.07 406.504 229.733 409.647 225.231 412.053C220.729 414.459 215.141 415.662 208.467 415.662H196.126V445H176.218V363.273H208.467C214.986 363.273 220.497 364.398 224.998 366.649C229.5 368.9 232.876 372.004 235.127 375.963C237.378 379.921 238.503 384.461 238.503 389.584ZM206.953 399.829C210.756 399.829 213.589 398.936 215.452 397.151C217.314 395.366 218.246 392.844 218.246 389.584C218.246 386.324 217.314 383.802 215.452 382.017C213.589 380.231 210.756 379.339 206.953 379.339H196.126V399.829H206.953ZM243.163 412.402C243.163 405.727 244.404 399.868 246.888 394.823C249.449 389.778 252.903 385.897 257.249 383.181C261.596 380.464 266.447 379.106 271.802 379.106C276.381 379.106 280.378 380.037 283.793 381.9C287.286 383.763 289.964 386.208 291.826 389.235V380.037H311.734V445H291.826V435.803C289.886 438.83 287.169 441.275 283.677 443.137C280.262 445 276.265 445.931 271.686 445.931C266.408 445.931 261.596 444.573 257.249 441.857C252.903 439.063 249.449 435.143 246.888 430.098C244.404 424.976 243.163 419.077 243.163 412.402ZM291.826 412.519C291.826 407.551 290.429 403.632 287.635 400.76C284.919 397.889 281.581 396.453 277.623 396.453C273.665 396.453 270.289 397.889 267.494 400.76C264.778 403.554 263.42 407.435 263.42 412.402C263.42 417.37 264.778 421.328 267.494 424.277C270.289 427.149 273.665 428.585 277.623 428.585C281.581 428.585 284.919 427.149 287.635 424.277C290.429 421.405 291.826 417.486 291.826 412.519ZM417.643 380.037L400.064 445H378.06L367.815 402.856L357.221 445H335.334L317.638 380.037H337.546L346.743 426.489L357.687 380.037H378.759L389.819 426.256L398.899 380.037H417.643Z" fill="white"/>
+          <path d="M634.094 389.584C634.094 394.318 633.007 398.665 630.834 402.623C628.661 406.504 625.323 409.647 620.822 412.053C616.32 414.459 610.732 415.662 604.057 415.662H591.717V445H571.809V363.273H604.057C610.577 363.273 616.087 364.398 620.589 366.649C625.091 368.9 628.467 372.004 630.718 375.963C632.968 379.921 634.094 384.461 634.094 389.584ZM602.544 399.829C606.347 399.829 609.18 398.936 611.043 397.151C612.905 395.366 613.837 392.844 613.837 389.584C613.837 386.324 612.905 383.802 611.043 382.017C609.18 380.231 606.347 379.339 602.544 379.339H591.717V399.829H602.544ZM662.62 390.864C664.948 387.294 667.858 384.5 671.351 382.482C674.844 380.387 678.724 379.339 682.993 379.339V400.411H677.521C672.554 400.411 668.829 401.498 666.345 403.671C663.861 405.766 662.62 409.492 662.62 414.847V445H642.712V380.037H662.62V390.864ZM700.775 373.285C697.282 373.285 694.41 372.276 692.159 370.258C689.986 368.162 688.9 365.601 688.9 362.574C688.9 359.47 689.986 356.909 692.159 354.891C694.41 352.795 697.282 351.747 700.775 351.747C704.19 351.747 706.984 352.795 709.157 354.891C711.408 356.909 712.533 359.47 712.533 362.574C712.533 365.601 711.408 368.162 709.157 370.258C706.984 372.276 704.19 373.285 700.775 373.285ZM710.67 380.037V445H690.762V380.037H710.67ZM762.934 379.339C770.54 379.339 776.594 381.822 781.096 386.79C785.675 391.679 787.964 398.432 787.964 407.047V445H768.173V409.725C768.173 405.378 767.048 402.002 764.797 399.596C762.546 397.19 759.519 395.987 755.716 395.987C751.913 395.987 748.886 397.19 746.635 399.596C744.384 402.002 743.259 405.378 743.259 409.725V445H723.351V380.037H743.259V388.652C745.277 385.781 747.993 383.53 751.408 381.9C754.823 380.193 758.665 379.339 762.934 379.339ZM836.259 428.119V445H826.13C818.912 445 813.285 443.254 809.249 439.761C805.213 436.191 803.195 430.409 803.195 422.414V396.569H795.279V380.037H803.195V364.204H823.103V380.037H836.142V396.569H823.103V422.647C823.103 424.588 823.569 425.985 824.5 426.838C825.432 427.692 826.984 428.119 829.157 428.119H836.259Z" fill="white"/>
+        </svg>
+      </span>
+      <div>
+        <h1>Календарь платежей</h1>
+        <div class="sub">PawPrint · операционные выплаты и поступления</div>
+      </div>
     </div>
+    <div class="toolbar">
+      <div class="seg" id="viewSeg">
+        <button data-view="list" class="active">Список</button>
+        <button data-view="calendar">Календарь</button>
+      </div>
+      <button class="ghost icon-btn" id="settingsBtn" title="Настройки дэшборда" aria-label="Настройки">
+        <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="10" cy="10" r="2.6"/>
+          <path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4M15.3 15.3l-1.4-1.4M6.1 6.1L4.7 4.7"/>
+        </svg>
+      </button>
+      <button class="primary" id="addBtn">+ Платёж</button>
+    </div>
+  </header>
 
-    <div class="toast" id="toast"></div>
+  <div id="configWarning"></div>
+  <div class="summary" id="summary"></div>
 
-    <script>
-        /* ====== 1. НАСТРОЙКА SUPABASE — впишите свои значения ====== */
-        const SUPABASE_URL = 'https://tmiyswfdwbbunitymhuo.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_EI1yiNTyRAWm8IcrOcs2iQ_Io9FSG85';
-        /* ============================================================ */
+  <div class="panel" id="panel"></div>
 
-        const CONFIGURED = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_ANON_KEY.includes('YOUR-ANON');
-        let sb = null;
-        if (CONFIGURED) {
-            sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        }
+  <div class="shared-note" style="margin-top:14px;">
+    <span class="dot" id="connDot"></span> <span id="connText">Подключение к базе…</span>
+  </div>
 
-        const DEFAULT_TYPES = [
-            { id: 'partner', label: 'Выплата партнёру/сотруднику', dir: 'out' },
-            { id: 'vet', label: 'Оплата врачу', dir: 'out' },
-            { id: 'prize', label: 'Приз программы лояльности', dir: 'out' },
-            { id: 'giftbox', label: 'Закупка пет-боксов/призов', dir: 'out' },
-            { id: 'card', label: 'Клубная карта (доход)', dir: 'in' },
-            { id: 'telemed', label: 'Комиссия с телемеда (доход)', dir: 'in' },
-            { id: 'other_out', label: 'Прочий расход', dir: 'out' },
-            { id: 'other_in', label: 'Прочий доход', dir: 'in' },
-        ];
-        let types = [];
-        function getType(id) {
-            return types.find(t => t.id === id) || { id, label: 'Неизвестный тип', dir: 'out' };
-        }
+</div>
 
-        let payments = [];
-        let currentView = 'list';
-        let calMonth = new Date(); calMonth.setDate(1);
+<div class="toast" id="toast"></div>
 
-        let balanceSettings = { amount: 0, date: new Date().toISOString().slice(0, 10) };
+<script>
+/* ====== 1. НАСТРОЙКА SUPABASE — впишите свои значения ====== */
+const SUPABASE_URL = 'https://tmiyswfdwbbunitymhuo.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_EI1yiNTyRAWm8IcrOcs2iQ_Io9FSG85';
+/* ============================================================ */
 
-        function setConn(ok, text) {
-            const dot = document.getElementById('connDot'), t = document.getElementById('connText');
-            if (dot) dot.classList.toggle('off', !ok);
-            if (t) t.textContent = text;
-        }
+const CONFIGURED = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_ANON_KEY.includes('YOUR-ANON');
+let sb = null;
+if(CONFIGURED){
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
 
-        function showConfigWarning() {
-            document.getElementById('configWarning').innerHTML = `
+const DEFAULT_TYPES = [
+  {id:'partner', label:'Выплата партнёру/сотруднику', dir:'out'},
+  {id:'vet', label:'Оплата врачу', dir:'out'},
+  {id:'prize', label:'Приз программы лояльности', dir:'out'},
+  {id:'giftbox', label:'Закупка пет-боксов/призов', dir:'out'},
+  {id:'card', label:'Клубная карта (доход)', dir:'in'},
+  {id:'telemed', label:'Комиссия с телемеда (доход)', dir:'in'},
+  {id:'other_out', label:'Прочий расход', dir:'out'},
+  {id:'other_in', label:'Прочий доход', dir:'in'},
+];
+let types = [];
+function getType(id){
+  return types.find(t=>t.id===id) || {id, label:'Неизвестный тип', dir:'out'};
+}
+
+let payments = [];
+let currentView = 'list';
+let calMonth = new Date(); calMonth.setDate(1);
+
+let balanceSettings = {amount:0, date: todayStr()};
+
+function setConn(ok, text){
+  const dot = document.getElementById('connDot'), t = document.getElementById('connText');
+  if(dot) dot.classList.toggle('off', !ok);
+  if(t) t.textContent = text;
+}
+
+function showConfigWarning(){
+  document.getElementById('configWarning').innerHTML = `
     <div class="config-warning">
       База данных ещё не подключена. Впишите <code>SUPABASE_URL</code> и <code>SUPABASE_ANON_KEY</code>
       в начале файла <code>index.html</code> (см. README.md) и передеплойте сайт.
     </div>`;
-        }
+}
 
-        /* ---------- типы платежей ---------- */
-        async function loadTypes() {
-            if (!CONFIGURED) { types = DEFAULT_TYPES; return; }
-            const { data, error } = await sb.from('app_settings').select('value').eq('key', 'types').maybeSingle();
-            if (error || !data || !data.value || !data.value.length) {
-                types = DEFAULT_TYPES;
-                await sb.from('app_settings').upsert({ key: 'types', value: types });
-            } else {
-                types = data.value;
-            }
-        }
-        async function saveTypes() {
-            const { error } = await sb.from('app_settings').upsert({ key: 'types', value: types });
-            if (error) showToast('Не удалось сохранить настройки: ' + error.message, true);
-        }
+/* ---------- типы платежей ---------- */
+async function loadTypes(){
+  if(!CONFIGURED){ types = DEFAULT_TYPES; return; }
+  const {data, error} = await sb.from('app_settings').select('value').eq('key','types').maybeSingle();
+  if(error || !data || !data.value || !data.value.length){
+    types = DEFAULT_TYPES;
+    await sb.from('app_settings').upsert({key:'types', value:types});
+  }else{
+    types = data.value;
+  }
+}
+async function saveTypes(){
+  const {error} = await sb.from('app_settings').upsert({key:'types', value:types});
+  if(error) showToast('Не удалось сохранить настройки: ' + error.message, true);
+}
 
-        /* ---------- начальный баланс ---------- */
-        async function loadBalanceSettings() {
-            if (!CONFIGURED) return;
-            const { data, error } = await sb.from('app_settings').select('value').eq('key', 'balance').maybeSingle();
-            if (!error && data && data.value) balanceSettings = data.value;
-        }
-        async function saveBalanceSettings() {
-            const { error } = await sb.from('app_settings').upsert({ key: 'balance', value: balanceSettings });
-            if (error) showToast('Не удалось сохранить баланс: ' + error.message, true);
-        }
+/* ---------- начальный баланс ---------- */
+async function loadBalanceSettings(){
+  if(!CONFIGURED) return;
+  const {data, error} = await sb.from('app_settings').select('value').eq('key','balance').maybeSingle();
+  if(!error && data && data.value) balanceSettings = data.value;
+}
+async function saveBalanceSettings(){
+  const {error} = await sb.from('app_settings').upsert({key:'balance', value:balanceSettings});
+  if(error) showToast('Не удалось сохранить баланс: ' + error.message, true);
+}
 
-        function netAmount(p) {
-            return (getType(p.type).dir === 'in' ? 1 : -1) * Number(p.amount);
-        }
-        function balanceBefore(dateStr) {
-            let bal = Number(balanceSettings.amount) || 0;
-            payments.forEach(p => {
-                if (p.date >= balanceSettings.date && p.date < dateStr) bal += netAmount(p);
-            });
-            return bal;
-        }
-        function addMonths(ymStr, n) {
-            const d = new Date(ymStr + '-01T00:00:00');
-            d.setMonth(d.getMonth() + n);
-            return d.toISOString().slice(0, 10);
-        }
+function netAmount(p){
+  return (getType(p.type).dir==='in' ? 1 : -1) * Number(p.amount);
+}
+function balanceBefore(dateStr){
+  let bal = Number(balanceSettings.amount)||0;
+  payments.forEach(p=>{
+    if(p.date >= balanceSettings.date && p.date < dateStr) bal += netAmount(p);
+  });
+  return bal;
+}
+function addMonths(ymStr, n){
+  let [y, m] = ymStr.split('-').map(Number);
+  m += n;
+  while(m > 12){ m -= 12; y++; }
+  while(m < 1){ m += 12; y--; }
+  return `${y}-${String(m).padStart(2,'0')}-01`;
+}
 
-        /* ---------- платежи ---------- */
-        function rowToClient(r) {
-            return { id: r.id, recipient: r.recipient, date: r.date, amount: Number(r.amount), type: r.type, note: r.note || '', paid: r.paid };
-        }
-        async function loadPayments() {
-            if (!CONFIGURED) {
-                showConfigWarning();
-                setConn(false, 'База не подключена');
-                payments = [];
-                render();
-                return;
-            }
-            setConn(false, 'Загрузка…');
-            const { data, error } = await sb.from('payments').select('*').order('date', { ascending: true });
-            if (error) { setConn(false, 'Ошибка подключения к базе'); showToast('Не удалось загрузить данные', true); return; }
-            payments = data.map(rowToClient);
-            setConn(true, 'Подключено — данные общие для команды');
-            render();
-        }
-        async function insertPayment(p) {
-            const { data, error } = await sb.from('payments').insert([{
-                recipient: p.recipient, date: p.date, amount: p.amount, type: p.type, note: p.note || null, paid: false
-            }]).select();
-            if (error) { showToast('Не удалось сохранить: ' + error.message, true); return false; }
-            payments.push(rowToClient(data[0]));
-            return true;
-        }
-        async function updatePayment(id, fields) {
-            const { error } = await sb.from('payments').update(fields).eq('id', id);
-            if (error) { showToast('Не удалось обновить: ' + error.message, true); return false; }
-            const p = payments.find(p => p.id === id);
-            if (p) Object.assign(p, fields);
-            return true;
-        }
-        async function deletePaymentRemote(id) {
-            const { error } = await sb.from('payments').delete().eq('id', id);
-            if (error) { showToast('Не удалось удалить: ' + error.message, true); return false; }
-            payments = payments.filter(p => p.id !== id);
-            return true;
-        }
+/* ---------- платежи ---------- */
+function rowToClient(r){
+  return {id:r.id, recipient:r.recipient, date:r.date, amount:Number(r.amount), type:r.type, note:r.note||'', paid:r.paid};
+}
+async function loadPayments(){
+  if(!CONFIGURED){
+    showConfigWarning();
+    setConn(false, 'База не подключена');
+    payments = [];
+    render();
+    return;
+  }
+  setConn(false, 'Загрузка…');
+  const {data, error} = await sb.from('payments').select('*').order('date', {ascending:true});
+  if(error){ setConn(false, 'Ошибка подключения к базе'); showToast('Не удалось загрузить данные', true); return; }
+  payments = data.map(rowToClient);
+  setConn(true, 'Подключено — данные общие для команды');
+  render();
+}
+async function insertPayment(p){
+  const {data, error} = await sb.from('payments').insert([{
+    recipient:p.recipient, date:p.date, amount:p.amount, type:p.type, note:p.note||null, paid:false
+  }]).select();
+  if(error){ showToast('Не удалось сохранить: ' + error.message, true); return false; }
+  payments.push(rowToClient(data[0]));
+  return true;
+}
+async function updatePayment(id, fields){
+  const {error} = await sb.from('payments').update(fields).eq('id', id);
+  if(error){ showToast('Не удалось обновить: ' + error.message, true); return false; }
+  const p = payments.find(p=>p.id===id);
+  if(p) Object.assign(p, fields);
+  return true;
+}
+async function deletePaymentRemote(id){
+  const {error} = await sb.from('payments').delete().eq('id', id);
+  if(error){ showToast('Не удалось удалить: ' + error.message, true); return false; }
+  payments = payments.filter(p=>p.id!==id);
+  return true;
+}
 
-        function subscribeRealtime() {
-            if (!CONFIGURED) return;
-            sb.channel('payments-live')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => { loadPayments(); })
-                .subscribe();
-            sb.channel('settings-live')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, async () => {
-                    await loadTypes(); await loadBalanceSettings(); render();
-                })
-                .subscribe();
-        }
+function subscribeRealtime(){
+  if(!CONFIGURED) return;
+  sb.channel('payments-live')
+    .on('postgres_changes', {event:'*', schema:'public', table:'payments'}, ()=>{ loadPayments(); })
+    .subscribe();
+  sb.channel('settings-live')
+    .on('postgres_changes', {event:'*', schema:'public', table:'app_settings'}, async ()=>{
+      await loadTypes(); await loadBalanceSettings(); render();
+    })
+    .subscribe();
+}
 
-        function uid() { return 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
-        function fmt(n) { return new Intl.NumberFormat('ru-RU').format(n) + ' ₸'; }
-        function formatAmount(n) { return new Intl.NumberFormat('ru-RU').format(n); }
-        function todayStr() { const d = new Date(); return d.toISOString().slice(0, 10); }
-        function statusOf(p) {
-            if (p.paid) return 'paid';
-            return p.date < todayStr() ? 'overdue' : 'pending';
-        }
-        function monthLabel(d) {
-            return d.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
-        }
+function uid(){ return 'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+function fmt(n){ return new Intl.NumberFormat('ru-RU').format(n) + ' ₸'; }
+function formatAmount(n){ return new Intl.NumberFormat('ru-RU').format(n); }
+function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function statusOf(p){
+  if(p.paid) return 'paid';
+  return p.date < todayStr() ? 'overdue' : 'pending';
+}
+function monthLabel(d){
+  return d.toLocaleDateString('ru-RU',{month:'long', year:'numeric'});
+}
 
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg; t.classList.add('show');
-            clearTimeout(showToast._h);
-            showToast._h = setTimeout(() => t.classList.remove('show'), 2200);
-        }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(showToast._h);
+  showToast._h = setTimeout(()=>t.classList.remove('show'), 2200);
+}
 
-        function render() {
-            renderSummary();
-            if (currentView === 'list') renderList(); else renderCalendar();
-        }
+function render(){
+  renderSummary();
+  if(currentView==='list') renderList(); else renderCalendar();
+}
 
-        function renderSummary() {
-            const now = new Date();
-            const ym = now.toISOString().slice(0, 7);
-            const monthStart = ym + '-01';
-            const monthEnd = addMonths(ym, 1);
-            const thisMonth = payments.filter(p => p.date.slice(0, 7) === ym);
-            const outPlanned = thisMonth.filter(p => getType(p.type).dir === 'out').reduce((s, p) => s + Number(p.amount), 0);
-            const inPlanned = thisMonth.filter(p => getType(p.type).dir === 'in').reduce((s, p) => s + Number(p.amount), 0);
-            const overdue = payments.filter(p => statusOf(p) === 'overdue').length;
-            const upcoming7 = payments.filter(p => {
-                const d = new Date(p.date); const diff = (d - now) / 86400000;
-                return !p.paid && diff >= 0 && diff <= 7;
-            }).length;
-            const balStart = balanceBefore(monthStart);
-            const balEnd = balanceBefore(monthEnd);
+function renderSummary(){
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthStart = ym+'-01';
+  const monthEnd = addMonths(ym, 1);
+  const thisMonth = payments.filter(p=>p.date.slice(0,7)===ym);
+  const outPlanned = thisMonth.filter(p=>getType(p.type).dir==='out').reduce((s,p)=>s+Number(p.amount),0);
+  const inPlanned = thisMonth.filter(p=>getType(p.type).dir==='in').reduce((s,p)=>s+Number(p.amount),0);
+  const overdue = payments.filter(p=>statusOf(p)==='overdue').length;
+  const upcoming7 = payments.filter(p=>{
+    const d = new Date(p.date); const diff=(d-now)/86400000;
+    return !p.paid && diff>=0 && diff<=7;
+  }).length;
+  const balStart = balanceBefore(monthStart);
+  const balEnd = balanceBefore(monthEnd);
 
-            document.getElementById('summary').innerHTML = `
+  document.getElementById('summary').innerHTML = `
     <div class="stat balance"><div class="label">Баланс на начало месяца</div><div class="val">${fmt(balStart)}</div><div class="hint">с учётом начального баланса</div></div>
-    <div class="stat balance"><div class="label">Баланс на конец месяца</div><div class="val" style="color:${balEnd < 0 ? 'var(--coral)' : 'var(--ink)'}">${fmt(balEnd)}</div><div class="hint">план + факт за месяц</div></div>
+    <div class="stat balance"><div class="label">Баланс на конец месяца</div><div class="val" style="color:${balEnd<0?'var(--coral)':'var(--ink)'}">${fmt(balEnd)}</div><div class="hint">план + факт за месяц</div></div>
     <div class="stat out"><div class="label">Расходы, этот месяц</div><div class="val">${fmt(outPlanned)}</div><div class="hint">план + факт</div></div>
     <div class="stat in"><div class="label">Поступления, этот месяц</div><div class="val">${fmt(inPlanned)}</div><div class="hint">план + факт</div></div>
-    <div class="stat"><div class="label">Просрочено</div><div class="val" style="color:${overdue ? '#D9704F' : '#16302C'}">${overdue}</div><div class="hint">платежей не отмечено</div></div>
+    <div class="stat"><div class="label">Просрочено</div><div class="val" style="color:${overdue?'#D9704F':'#16302C'}">${overdue}</div><div class="hint">платежей не отмечено</div></div>
     <div class="stat"><div class="label">Ближайшие 7 дней</div><div class="val">${upcoming7}</div><div class="hint">ожидают оплаты</div></div>
   `;
-        }
+}
 
-        function renderList() {
-            const panel = document.getElementById('panel');
-            if (payments.length === 0) {
-                panel.innerHTML = `<div class="empty">
+function renderList(){
+  const panel = document.getElementById('panel');
+  if(payments.length===0){
+    panel.innerHTML = `<div class="empty">
       <svg class="paw" viewBox="0 0 48 48" fill="none" style="margin:0 auto;">
         <ellipse cx="24" cy="30" rx="11" ry="9" fill="#16302C"/><ellipse cx="10" cy="16" rx="5" ry="6.5" fill="#16302C"/>
         <ellipse cx="22" cy="9" rx="5" ry="6.5" fill="#16302C"/><ellipse cx="34" cy="10" rx="5" ry="6.5" fill="#16302C"/>
@@ -893,139 +423,139 @@
       </svg>
       <div>Платежей пока нет. Добавьте первый — например, еженедельную выплату партнёрам.</div>
     </div>`;
-                return;
-            }
-            const sorted = [...payments].sort((a, b) => a.date.localeCompare(b.date));
-            const groups = {};
-            sorted.forEach(p => {
-                const ym = p.date.slice(0, 7);
-                (groups[ym] = groups[ym] || []).push(p);
-            });
-            let html = '';
-            Object.keys(groups).sort().forEach(ym => {
-                const d = new Date(ym + '-01');
-                const mStart = ym + '-01';
-                const mEnd = addMonths(ym, 1);
-                const bStart = balanceBefore(mStart);
-                const bEnd = balanceBefore(mEnd);
-                html += `<div class="month-group">
+    return;
+  }
+  const sorted = [...payments].sort((a,b)=>a.date.localeCompare(b.date));
+  const groups = {};
+  sorted.forEach(p=>{
+    const ym = p.date.slice(0,7);
+    (groups[ym] = groups[ym]||[]).push(p);
+  });
+  let html = '';
+  Object.keys(groups).sort().forEach(ym=>{
+    const d = new Date(ym+'-01');
+    const mStart = ym+'-01';
+    const mEnd = addMonths(ym, 1);
+    const bStart = balanceBefore(mStart);
+    const bEnd = balanceBefore(mEnd);
+    html += `<div class="month-group">
       <div class="month-title">${monthLabel(d)}</div>
       <div style="font-size:12px; color:var(--ink-soft); margin-bottom:8px;">
-        Баланс: начало ${fmt(bStart)} → конец <span style="color:${bEnd < 0 ? 'var(--coral)' : 'var(--green)'}; font-weight:600;">${fmt(bEnd)}</span>
+        Баланс: начало ${fmt(bStart)} → конец <span style="color:${bEnd<0?'var(--coral)':'var(--green)'}; font-weight:600;">${fmt(bEnd)}</span>
       </div>
     </div>
     <table><thead><tr>
       <th style="width:104px">Дата</th><th>Получатель / статья</th><th>Тип</th><th style="text-align:right">Сумма</th><th>Статус</th><th></th>
     </tr></thead><tbody>`;
-                groups[ym].forEach(p => {
-                    const t = getType(p.type);
-                    const st = statusOf(p);
-                    const stLabel = st === 'paid' ? 'Оплачено' : st === 'overdue' ? 'Просрочено' : 'Ожидается';
-                    const dd = new Date(p.date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
-                    html += `<tr>
+    groups[ym].forEach(p=>{
+      const t = getType(p.type);
+      const st = statusOf(p);
+      const stLabel = st==='paid'?'Оплачено':st==='overdue'?'Просрочено':'Ожидается';
+      const dd = new Date(p.date).toLocaleDateString('ru-RU',{day:'2-digit', month:'short'});
+      html += `<tr>
         <td>${dd}</td>
-        <td>${escapeHtml(p.recipient)}${p.note ? `<div style="color:var(--ink-soft); font-size:11.5px; margin-top:2px;">${escapeHtml(p.note)}</div>` : ''}</td>
+        <td>${escapeHtml(p.recipient)}${p.note?`<div style="color:var(--ink-soft); font-size:11.5px; margin-top:2px;">${escapeHtml(p.note)}</div>`:''}</td>
         <td><span class="tag">${t.label}</span></td>
-        <td class="amt ${t.dir}">${t.dir === 'out' ? '−' : '+'}${fmt(p.amount)}</td>
+        <td class="amt ${t.dir}">${t.dir==='out'?'−':'+'}${fmt(p.amount)}</td>
         <td><span class="badge ${st}">${stLabel}</span></td>
         <td>
           <div class="row-actions">
-            ${p.paid ? '' : `<button class="small" data-act="paid" data-id="${p.id}">Отметить оплаченным</button>`}
+            ${p.paid?'':`<button class="small" data-act="paid" data-id="${p.id}">Отметить оплаченным</button>`}
             <button class="small ghost" data-act="edit" data-id="${p.id}">✎</button>
             <button class="small ghost" data-act="del" data-id="${p.id}">✕</button>
           </div>
         </td>
       </tr>`;
-                });
-                html += `</tbody></table>`;
-            });
-            panel.innerHTML = html;
-            panel.querySelectorAll('[data-act]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const id = btn.dataset.id, act = btn.dataset.act;
-                    if (act === 'paid') togglePaid(id, true);
-                    if (act === 'del') doDelete(id);
-                    if (act === 'edit') openModal(payments.find(p => p.id === id));
-                });
-            });
-        }
+    });
+    html += `</tbody></table>`;
+  });
+  panel.innerHTML = html;
+  panel.querySelectorAll('[data-act]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.dataset.id, act = btn.dataset.act;
+      if(act==='paid') togglePaid(id, true);
+      if(act==='del') doDelete(id);
+      if(act==='edit') openModal(payments.find(p=>p.id===id));
+    });
+  });
+}
 
-        function renderCalendar() {
-            const panel = document.getElementById('panel');
-            const y = calMonth.getFullYear(), m = calMonth.getMonth();
-            const first = new Date(y, m, 1);
-            const startDow = (first.getDay() + 6) % 7; // Monday=0
-            const daysInMonth = new Date(y, m + 1, 0).getDate();
-            const prevDays = new Date(y, m, 0).getDate();
+function renderCalendar(){
+  const panel = document.getElementById('panel');
+  const y = calMonth.getFullYear(), m = calMonth.getMonth();
+  const first = new Date(y,m,1);
+  const startDow = (first.getDay()+6)%7; // Monday=0
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  const prevDays = new Date(y,m,0).getDate();
 
-            let cells = [];
-            for (let i = startDow; i > 0; i--) cells.push({ n: prevDays - i + 1, mute: true });
-            for (let d = 1; d <= daysInMonth; d++) cells.push({ n: d, mute: false, date: `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` });
-            while (cells.length % 7 !== 0) cells.push({ n: cells.length, mute: true });
+  let cells = [];
+  for(let i=startDow;i>0;i--) cells.push({n:prevDays-i+1, mute:true});
+  for(let d=1; d<=daysInMonth; d++) cells.push({n:d, mute:false, date:`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`});
+  while(cells.length%7!==0) cells.push({n:cells.length, mute:true});
 
-            const dows = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-            let html = `<div class="cal-head">
+  const dows = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  let html = `<div class="cal-head">
     <button class="ghost small" id="prevMonth">←</button>
     <div class="title">${monthLabel(calMonth)}</div>
     <button class="ghost small" id="nextMonth">→</button>
   </div>
   <div class="cal-grid">`;
-            dows.forEach(d => html += `<div class="cal-dow">${d}</div>`);
-            const today = todayStr();
-            cells.forEach(c => {
-                if (c.mute) { html += `<div class="cal-cell mute"><div class="cal-num">${c.n}</div></div>`; return; }
-                const dayPayments = payments.filter(p => p.date === c.date);
-                const isToday = c.date === today;
-                html += `<div class="cal-cell ${isToday ? 'today' : ''}"><div class="cal-num">${c.n}</div>`;
-                dayPayments.slice(0, 3).forEach(p => {
-                    const t = getType(p.type);
-                    html += `<div class="cal-item ${t.dir} ${p.paid ? 'paid' : ''}" data-id="${p.id}" title="${escapeHtml(p.recipient)} — ${fmt(p.amount)}">${escapeHtml(p.recipient)}</div>`;
-                });
-                if (dayPayments.length > 3) html += `<div class="cal-item" style="background:transparent;color:var(--ink-soft)">+${dayPayments.length - 3} ещё</div>`;
-                html += `</div>`;
-            });
-            html += `</div>`;
-            panel.innerHTML = html;
-            document.getElementById('prevMonth').onclick = () => { calMonth.setMonth(calMonth.getMonth() - 1); renderCalendar(); };
-            document.getElementById('nextMonth').onclick = () => { calMonth.setMonth(calMonth.getMonth() + 1); renderCalendar(); };
-            panel.querySelectorAll('.cal-item[data-id]').forEach(el => {
-                el.addEventListener('click', () => openModal(payments.find(p => p.id === el.dataset.id)));
-            });
-        }
+  dows.forEach(d=> html+=`<div class="cal-dow">${d}</div>`);
+  const today = todayStr();
+  cells.forEach(c=>{
+    if(c.mute){ html += `<div class="cal-cell mute"><div class="cal-num">${c.n}</div></div>`; return; }
+    const dayPayments = payments.filter(p=>p.date===c.date);
+    const isToday = c.date===today;
+    html += `<div class="cal-cell ${isToday?'today':''}"><div class="cal-num">${c.n}</div>`;
+    dayPayments.slice(0,3).forEach(p=>{
+      const t = getType(p.type);
+      html += `<div class="cal-item ${t.dir} ${p.paid?'paid':''}" data-id="${p.id}" title="${escapeHtml(p.recipient)} — ${fmt(p.amount)}">${escapeHtml(p.recipient)}</div>`;
+    });
+    if(dayPayments.length>3) html += `<div class="cal-item" style="background:transparent;color:var(--ink-soft)">+${dayPayments.length-3} ещё</div>`;
+    html += `</div>`;
+  });
+  html += `</div>`;
+  panel.innerHTML = html;
+  document.getElementById('prevMonth').onclick = ()=>{ calMonth.setMonth(calMonth.getMonth()-1); renderCalendar(); };
+  document.getElementById('nextMonth').onclick = ()=>{ calMonth.setMonth(calMonth.getMonth()+1); renderCalendar(); };
+  panel.querySelectorAll('.cal-item[data-id]').forEach(el=>{
+    el.addEventListener('click', ()=> openModal(payments.find(p=>p.id===el.dataset.id)));
+  });
+}
 
-        function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
-        async function togglePaid(id, val) {
-            const ok = await updatePayment(id, { paid: val });
-            if (ok) { render(); showToast('Отмечено оплаченным'); }
-        }
-        async function doDelete(id) {
-            if (!confirm('Удалить платёж?')) return;
-            const ok = await deletePaymentRemote(id);
-            if (ok) { render(); showToast('Платёж удалён'); }
-        }
+async function togglePaid(id, val){
+  const ok = await updatePayment(id, {paid: val});
+  if(ok){ render(); showToast('Отмечено оплаченным'); }
+}
+async function doDelete(id){
+  if(!confirm('Удалить платёж?')) return;
+  const ok = await deletePaymentRemote(id);
+  if(ok){ render(); showToast('Платёж удалён'); }
+}
 
-        function openModal(existing) {
-            if (!CONFIGURED) { showToast('Сначала подключите базу данных', true); return; }
-            const overlay = document.createElement('div');
-            overlay.className = 'overlay';
-            overlay.innerHTML = `
+function openModal(existing){
+  if(!CONFIGURED){ showToast('Сначала подключите базу данных', true); return; }
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
     <div class="modal">
-      <h2>${existing ? 'Изменить платёж' : 'Новый платёж'}</h2>
+      <h2>${existing? 'Изменить платёж':'Новый платёж'}</h2>
       <div class="field"><label>Получатель / статья</label>
-        <input id="f_recipient" placeholder="Напр.: Партнёр — зоомагазин «Барсик»" value="${existing ? escapeHtml(existing.recipient) : ''}"></div>
+        <input id="f_recipient" placeholder="Напр.: Партнёр — зоомагазин «Барсик»" value="${existing?escapeHtml(existing.recipient):''}"></div>
       <div class="row2">
-        <div class="field"><label>Дата</label><input id="f_date" type="date" value="${existing ? existing.date : todayStr()}"></div>
-        <div class="field"><label>Сумма, ₸</label><input id="f_amount" type="text" inputmode="numeric" placeholder="0" value="${existing ? formatAmount(existing.amount) : ''}"></div>
+        <div class="field"><label>Дата</label><input id="f_date" type="date" value="${existing?existing.date:todayStr()}"></div>
+        <div class="field"><label>Сумма, ₸</label><input id="f_amount" type="text" inputmode="numeric" placeholder="0" value="${existing?formatAmount(existing.amount):''}"></div>
       </div>
       <div class="field"><label>Тип</label>
-        <select id="f_type">${types.map(t => `<option value="${t.id}" ${existing && existing.type === t.id ? 'selected' : ''}>${t.label}</option>`).join('')}</select>
+        <select id="f_type">${types.map(t=>`<option value="${t.id}" ${existing&&existing.type===t.id?'selected':''}>${t.label}</option>`).join('')}</select>
       </div>
       <div class="field"><label>Заметка (необязательно)</label>
-        <input id="f_note" placeholder="Напр.: понедельничная выплата" value="${existing && existing.note ? escapeHtml(existing.note) : ''}"></div>
+        <input id="f_note" placeholder="Напр.: понедельничная выплата" value="${existing&&existing.note?escapeHtml(existing.note):''}"></div>
       <div class="modal-actions">
         <div class="left">
-          ${existing ? `<button id="f_delete" class="ghost">Удалить</button>` : ''}
+          ${existing?`<button id="f_delete" class="ghost">Удалить</button>`:''}
         </div>
         <div style="display:flex; gap:8px;">
           <button id="f_cancel">Отмена</button>
@@ -1034,58 +564,58 @@
       </div>
     </div>
   `;
-            document.body.appendChild(overlay);
-            overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-            overlay.querySelector('#f_cancel').onclick = () => overlay.remove();
-            const amountInput = overlay.querySelector('#f_amount');
-            amountInput.addEventListener('input', () => {
-                const raw = amountInput.value.replace(/\D/g, '');
-                amountInput.value = raw ? formatAmount(Number(raw)) : '';
-            });
-            if (existing) {
-                overlay.querySelector('#f_delete').onclick = async () => {
-                    overlay.remove(); await doDelete(existing.id);
-                };
-            }
-            overlay.querySelector('#f_save').onclick = async () => {
-                const recipient = overlay.querySelector('#f_recipient').value.trim();
-                const date = overlay.querySelector('#f_date').value;
-                const amount = Number(overlay.querySelector('#f_amount').value.replace(/\D/g, ''));
-                const type = overlay.querySelector('#f_type').value;
-                const note = overlay.querySelector('#f_note').value.trim();
-                if (!recipient || !date || !amount) {
-                    showToast('Заполните получателя, дату и сумму', true);
-                    return;
-                }
-                const btn = overlay.querySelector('#f_save'); btn.disabled = true; btn.textContent = 'Сохраняю…';
-                let ok;
-                if (existing) { ok = await updatePayment(existing.id, { recipient, date, amount, type, note: note || null }); }
-                else { ok = await insertPayment({ recipient, date, amount, type, note }); }
-                if (ok) { overlay.remove(); render(); showToast('Сохранено'); }
-                else { btn.disabled = false; btn.textContent = 'Сохранить'; }
-            };
-        }
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#f_cancel').onclick = ()=> overlay.remove();
+  const amountInput = overlay.querySelector('#f_amount');
+  amountInput.addEventListener('input', ()=>{
+    const raw = amountInput.value.replace(/\D/g,'');
+    amountInput.value = raw ? formatAmount(Number(raw)) : '';
+  });
+  if(existing){
+    overlay.querySelector('#f_delete').onclick = async ()=>{
+      overlay.remove(); await doDelete(existing.id);
+    };
+  }
+  overlay.querySelector('#f_save').onclick = async ()=>{
+    const recipient = overlay.querySelector('#f_recipient').value.trim();
+    const date = overlay.querySelector('#f_date').value;
+    const amount = Number(overlay.querySelector('#f_amount').value.replace(/\D/g,''));
+    const type = overlay.querySelector('#f_type').value;
+    const note = overlay.querySelector('#f_note').value.trim();
+    if(!recipient || !date || !amount){
+      showToast('Заполните получателя, дату и сумму', true);
+      return;
+    }
+    const btn = overlay.querySelector('#f_save'); btn.disabled = true; btn.textContent = 'Сохраняю…';
+    let ok;
+    if(existing){ ok = await updatePayment(existing.id, {recipient, date, amount, type, note: note||null}); }
+    else{ ok = await insertPayment({recipient, date, amount, type, note}); }
+    if(ok){ overlay.remove(); render(); showToast('Сохранено'); }
+    else{ btn.disabled = false; btn.textContent = 'Сохранить'; }
+  };
+}
 
-        document.getElementById('addBtn').addEventListener('click', () => openModal(null));
-        document.getElementById('settingsBtn').addEventListener('click', () => openSettingsModal());
-        document.getElementById('viewSeg').addEventListener('click', e => {
-            const btn = e.target.closest('button[data-view]');
-            if (!btn) return;
-            currentView = btn.dataset.view;
-            document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('active', b === btn));
-            render();
-        });
+document.getElementById('addBtn').addEventListener('click', ()=>openModal(null));
+document.getElementById('settingsBtn').addEventListener('click', ()=>openSettingsModal());
+document.getElementById('viewSeg').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-view]');
+  if(!btn) return;
+  currentView = btn.dataset.view;
+  document.querySelectorAll('#viewSeg button').forEach(b=>b.classList.toggle('active', b===btn));
+  render();
+});
 
-        function slugify(label) {
-            const base = label.toLowerCase().trim().replace(/[^a-zа-я0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'type';
-            return base + '_' + Math.random().toString(36).slice(2, 6);
-        }
+function slugify(label){
+  const base = label.toLowerCase().trim().replace(/[^a-zа-я0-9]+/gi,'_').replace(/^_+|_+$/g,'') || 'type';
+  return base + '_' + Math.random().toString(36).slice(2,6);
+}
 
-        function openSettingsModal() {
-            if (!CONFIGURED) { showToast('Сначала подключите базу данных', true); return; }
-            const overlay = document.createElement('div');
-            overlay.className = 'overlay';
-            overlay.innerHTML = `
+function openSettingsModal(){
+  if(!CONFIGURED){ showToast('Сначала подключите базу данных', true); return; }
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
     <div class="modal" style="max-width:480px;">
       <h2>Настройки дэшборда</h2>
 
@@ -1094,7 +624,7 @@
         Сколько денег было на счету на указанную дату — от этого считается баланс на начало и конец каждого месяца.
       </div>
       <div class="row2" style="margin-bottom:16px;">
-        <div class="field"><label>Сумма, ₸</label><input id="balAmount" type="text" inputmode="numeric" value="${formatAmount(balanceSettings.amount || 0)}"></div>
+        <div class="field"><label>Сумма, ₸</label><input id="balAmount" type="text" inputmode="numeric" value="${formatAmount(balanceSettings.amount||0)}"></div>
         <div class="field"><label>На дату</label><input id="balDate" type="date" value="${balanceSettings.date}"></div>
       </div>
       <div style="margin:-8px 0 20px; display:flex; justify-content:flex-end;">
@@ -1117,73 +647,72 @@
         <button id="settingsClose">Готово</button>
       </div>
     </div>`;
-            document.body.appendChild(overlay);
-            overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-            overlay.querySelector('#settingsClose').onclick = () => overlay.remove();
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#settingsClose').onclick = ()=> overlay.remove();
 
-            const balAmountInput = overlay.querySelector('#balAmount');
-            balAmountInput.addEventListener('input', () => {
-                const raw = balAmountInput.value.replace(/\D/g, '');
-                balAmountInput.value = raw ? formatAmount(Number(raw)) : '';
-            });
-            overlay.querySelector('#balSave').onclick = async () => {
-                const amount = Number(balAmountInput.value.replace(/\D/g, '')) || 0;
-                const date = overlay.querySelector('#balDate').value || todayStr();
-                balanceSettings = { amount, date };
-                await saveBalanceSettings();
-                render();
-                showToast('Начальный баланс сохранён');
-            };
+  const balAmountInput = overlay.querySelector('#balAmount');
+  balAmountInput.addEventListener('input', ()=>{
+    const raw = balAmountInput.value.replace(/\D/g,'');
+    balAmountInput.value = raw ? formatAmount(Number(raw)) : '';
+  });
+  overlay.querySelector('#balSave').onclick = async ()=>{
+    const amount = Number(balAmountInput.value.replace(/\D/g,'')) || 0;
+    const date = overlay.querySelector('#balDate').value || todayStr();
+    balanceSettings = {amount, date};
+    await saveBalanceSettings();
+    render();
+    showToast('Начальный баланс сохранён');
+  };
 
-            function renderTypesList() {
-                const list = overlay.querySelector('#typesList');
-                list.innerHTML = types.map(t => {
-                    const inUse = payments.some(p => p.type === t.id);
-                    return `<div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid var(--line); border-radius:8px;">
+  function renderTypesList(){
+    const list = overlay.querySelector('#typesList');
+    list.innerHTML = types.map(t=>{
+      const inUse = payments.some(p=>p.type===t.id);
+      return `<div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid var(--line); border-radius:8px;">
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="tag">${escapeHtml(t.label)}</span>
-          <span style="font-size:11px; color:${t.dir === 'out' ? 'var(--coral)' : 'var(--green)'};">${t.dir === 'out' ? 'расход' : 'доход'}</span>
-          ${inUse ? '<span style="font-size:10.5px; color:var(--ink-soft);">· используется</span>' : ''}
+          <span style="font-size:11px; color:${t.dir==='out'?'var(--coral)':'var(--green)'};">${t.dir==='out'?'расход':'доход'}</span>
+          ${inUse?'<span style="font-size:10.5px; color:var(--ink-soft);">· используется</span>':''}
         </div>
         <button class="small ghost" data-del="${t.id}" title="Удалить тип">✕</button>
       </div>`;
-                }).join('') || `<div style="color:var(--ink-soft); font-size:13px;">Типов пока нет — добавьте хотя бы один ниже.</div>`;
-                list.querySelectorAll('[data-del]').forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        if (types.length <= 1) { showToast('Должен остаться хотя бы один тип', true); return; }
-                        const id = btn.dataset.del;
-                        const used = payments.some(p => p.type === id);
-                        if (used && !confirm('Этот тип используется в платежах. Они останутся, но будут помечены как «Неизвестный тип». Удалить?')) return;
-                        types = types.filter(t => t.id !== id);
-                        await saveTypes();
-                        renderTypesList();
-                        render();
-                    });
-                });
-            }
-            renderTypesList();
+    }).join('') || `<div style="color:var(--ink-soft); font-size:13px;">Типов пока нет — добавьте хотя бы один ниже.</div>`;
+    list.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        if(types.length<=1){ showToast('Должен остаться хотя бы один тип', true); return; }
+        const id = btn.dataset.del;
+        const used = payments.some(p=>p.type===id);
+        if(used && !confirm('Этот тип используется в платежах. Они останутся, но будут помечены как «Неизвестный тип». Удалить?')) return;
+        types = types.filter(t=>t.id!==id);
+        await saveTypes();
+        renderTypesList();
+        render();
+      });
+    });
+  }
+  renderTypesList();
 
-            overlay.querySelector('#newTypeAdd').onclick = async () => {
-                const labelInput = overlay.querySelector('#newTypeLabel');
-                const label = labelInput.value.trim();
-                const dir = overlay.querySelector('#newTypeDir').value;
-                if (!label) { showToast('Введите название типа', true); return; }
-                types.push({ id: slugify(label), label, dir });
-                await saveTypes();
-                labelInput.value = '';
-                renderTypesList();
-                render();
-            };
-        }
+  overlay.querySelector('#newTypeAdd').onclick = async ()=>{
+    const labelInput = overlay.querySelector('#newTypeLabel');
+    const label = labelInput.value.trim();
+    const dir = overlay.querySelector('#newTypeDir').value;
+    if(!label){ showToast('Введите название типа', true); return; }
+    types.push({id:slugify(label), label, dir});
+    await saveTypes();
+    labelInput.value = '';
+    renderTypesList();
+    render();
+  };
+}
 
-        (async function init() {
-            if (!CONFIGURED) showConfigWarning();
-            await loadTypes();
-            await loadBalanceSettings();
-            await loadPayments();
-            subscribeRealtime();
-        })();
-    </script>
+(async function init(){
+  if(!CONFIGURED) showConfigWarning();
+  await loadTypes();
+  await loadBalanceSettings();
+  await loadPayments();
+  subscribeRealtime();
+})();
+</script>
 </body>
-
 </html>
