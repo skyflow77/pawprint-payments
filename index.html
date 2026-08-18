@@ -404,7 +404,7 @@ function renderSummary(){
 
   document.getElementById('summary').innerHTML = `
     <div class="stat balance"><div class="label">Баланс на начало месяца</div><div class="val">${fmt(balStart)}</div><div class="hint">с учётом начального баланса</div></div>
-    <div class="stat balance"><div class="label">Баланс на конец месяца</div><div class="val" style="color:${balEnd<0?'var(--coral)':'var(--ink)'}">${fmt(balEnd)}</div><div class="hint">план + факт за месяц</div></div>
+    <div class="stat balance"><div class="label">Баланс на конец месяца</div><div class="val" style="color:${balEnd<0?'#E8967A':'#F4EFE4'}">${fmt(balEnd)}</div><div class="hint">план + факт за месяц</div></div>
     <div class="stat out"><div class="label">Расходы, этот месяц</div><div class="val">${fmt(outPlanned)}</div><div class="hint">план + факт</div></div>
     <div class="stat in"><div class="label">Поступления, этот месяц</div><div class="val">${fmt(inPlanned)}</div><div class="hint">план + факт</div></div>
     <div class="stat"><div class="label">Просрочено</div><div class="val" style="color:${overdue?'#D9704F':'#16302C'}">${overdue}</div><div class="hint">платежей не отмечено</div></div>
