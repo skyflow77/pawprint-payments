@@ -207,6 +207,8 @@
   <div id="configWarning"></div>
   <div class="summary" id="summary"></div>
 
+  <div class="panel" id="chartPanel" style="margin-bottom:20px;"></div>
+
   <div class="panel" id="panel"></div>
 
   <div class="shared-note" style="margin-top:14px;">
@@ -383,7 +385,106 @@ function showToast(msg){
 
 function render(){
   renderSummary();
+  renderExpenseChart();
   if(currentView==='list') renderList(); else renderCalendar();
+}
+
+let chartMonth = new Date(); chartMonth.setDate(1);
+
+function distributePercents(amounts, total){
+  // Метод наибольшего остатка: округляем так, чтобы сумма процентов всегда была 100
+  const raw = amounts.map(a => total ? (a/total*100) : 0);
+  const floors = raw.map(v => Math.floor(v));
+  let remainder = 100 - floors.reduce((s,v)=>s+v,0);
+  const order = raw.map((v,i)=>[i, v-Math.floor(v)]).sort((a,b)=>b[1]-a[1]);
+  const result = [...floors];
+  for(let i=0; i<remainder && order.length; i++){
+    result[order[i % order.length][0]] += 1;
+  }
+  return result;
+}
+
+function renderExpenseChart(){
+  const panel = document.getElementById('chartPanel');
+  if(!panel) return;
+  const ym = `${chartMonth.getFullYear()}-${String(chartMonth.getMonth()+1).padStart(2,'0')}`;
+  const monthOut = payments.filter(p=>p.date.slice(0,7)===ym && getType(p.type).dir==='out');
+  const totals = {};
+  monthOut.forEach(p=>{ totals[p.type] = (totals[p.type]||0) + Number(p.amount); });
+  const entries = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const total = entries.reduce((s,[,v])=>s+v,0);
+
+  const header = `<div style="display:flex; align-items:center; justify-content:space-between; padding:20px 24px 0;">
+    <div class="month-title" style="margin:0;">Структура расходов</div>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <button class="ghost small" id="chartPrev">←</button>
+      <div style="font-size:13px; font-weight:600; text-transform:capitalize; min-width:130px; text-align:center;">${monthLabel(chartMonth)}</div>
+      <button class="ghost small" id="chartNext">→</button>
+    </div>
+  </div>`;
+
+  if(!entries.length){
+    panel.innerHTML = header + `<div style="padding:16px 24px 24px;">
+      <div style="color:var(--ink-soft); font-size:13px;">Расходов за этот месяц пока нет.</div>
+    </div>`;
+    wireChartNav();
+    return;
+  }
+
+  const COLORS = ['#D9704F','#E8A33D','#4B8B6F','#5B84A6','#9B6FA0','#C9A227','#6E8F87','#B4756A','#7C93C4','#A98BC7'];
+  const r = 70, cx = 100, cy = 100, sw = 28;
+  const circumference = 2*Math.PI*r;
+  let offset = 0;
+  const arcs = entries.map(([typeId, amt], i)=>{
+    const frac = amt/total;
+    const len = frac*circumference;
+    const dasharray = `${len} ${circumference-len}`;
+    const dashoffset = -offset;
+    offset += len;
+    const color = COLORS[i % COLORS.length];
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-dasharray="${dasharray}" stroke-dashoffset="${dashoffset}"/>`;
+  }).join('');
+
+  const pcts = distributePercents(entries.map(([,amt])=>amt), total);
+  const legend = entries.map(([typeId, amt], i)=>{
+    const t = getType(typeId);
+    const pct = pcts[i];
+    const color = COLORS[i % COLORS.length];
+    return `<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid var(--line);">
+      <div style="display:flex; align-items:center; gap:9px; min-width:0;">
+        <span style="width:10px;height:10px;border-radius:3px;background:${color};flex:none;"></span>
+        <span style="font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(t.label)}</span>
+      </div>
+      <div style="display:flex; gap:10px; align-items:baseline; flex:none;">
+        <span style="font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink-soft);">${pct}%</span>
+        <span style="font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600; color:var(--coral);">${fmt(amt)}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  panel.innerHTML = header + `
+    <div style="padding:16px 24px 24px; display:flex; gap:32px; flex-wrap:wrap; align-items:center;">
+      <div style="position:relative; flex:none; width:200px; height:200px;">
+        <svg width="200" height="200" viewBox="0 0 200 200">
+          <g transform="rotate(-90 100 100)">${arcs}</g>
+        </svg>
+        <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <div style="font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); font-weight:600;">Итого</div>
+          <div style="font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:15px; margin-top:2px;">${fmt(total)}</div>
+        </div>
+      </div>
+      <div style="flex:1; min-width:240px;">
+        ${legend}
+      </div>
+    </div>`;
+  wireChartNav();
+}
+
+function wireChartNav(){
+  const prev = document.getElementById('chartPrev');
+  const next = document.getElementById('chartNext');
+  if(prev) prev.onclick = ()=>{ chartMonth.setMonth(chartMonth.getMonth()-1); renderExpenseChart(); };
+  if(next) next.onclick = ()=>{ chartMonth.setMonth(chartMonth.getMonth()+1); renderExpenseChart(); };
 }
 
 function renderSummary(){
