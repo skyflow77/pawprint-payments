@@ -827,10 +827,11 @@ function openSettingsModal(){
 }
 
 (async function init(){
+  renderMonthSwitcher(); // название месяца не зависит от базы — показываем сразу
   if(!CONFIGURED) showConfigWarning();
-  await loadTypes();
-  await loadBalanceSettings();
-  await loadPayments();
+  setConn(false, 'Загрузка…');
+  await Promise.all([loadTypes(), loadBalanceSettings(), loadPayments()]);
+  render();
   subscribeRealtime();
 })();
 </script>
