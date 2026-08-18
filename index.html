@@ -59,7 +59,15 @@
   .seg button{border:none; background:transparent; padding:6px 12px; border-radius:6px;}
   .seg button.active{background:var(--ink); color:#fff;}
 
-  .summary{
+  .month-switcher{
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    margin:22px 0 4px;
+  }
+  .month-switcher-label{
+    font-family:'Fraunces', serif; font-size:18px; font-weight:600; text-transform:capitalize;
+    min-width:170px; text-align:center;
+  }
+    .summary{
     display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:24px 0 28px;
   }
   .stat{
@@ -203,6 +211,12 @@
       <button class="primary" id="addBtn">+ Платёж</button>
     </div>
   </header>
+
+  <div class="month-switcher">
+    <button class="ghost small" id="monthPrev">←</button>
+    <div class="month-switcher-label" id="monthSwitcherLabel"></div>
+    <button class="ghost small" id="monthNext">→</button>
+  </div>
 
   <div id="configWarning"></div>
   <div class="summary" id="summary"></div>
@@ -384,12 +398,18 @@ function showToast(msg){
 }
 
 function render(){
+  renderMonthSwitcher();
   renderSummary();
   renderExpenseChart();
   if(currentView==='list') renderList(); else renderCalendar();
 }
 
-let chartMonth = new Date(); chartMonth.setDate(1);
+let selectedMonth = new Date(); selectedMonth.setDate(1);
+
+function renderMonthSwitcher(){
+  const label = document.getElementById('monthSwitcherLabel');
+  if(label) label.textContent = monthLabel(selectedMonth);
+}
 
 function distributePercents(amounts, total){
   // Метод наибольшего остатка: округляем так, чтобы сумма процентов всегда была 100
@@ -407,27 +427,21 @@ function distributePercents(amounts, total){
 function renderExpenseChart(){
   const panel = document.getElementById('chartPanel');
   if(!panel) return;
-  const ym = `${chartMonth.getFullYear()}-${String(chartMonth.getMonth()+1).padStart(2,'0')}`;
+  const ym = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth()+1).padStart(2,'0')}`;
   const monthOut = payments.filter(p=>p.date.slice(0,7)===ym && getType(p.type).dir==='out');
   const totals = {};
   monthOut.forEach(p=>{ totals[p.type] = (totals[p.type]||0) + Number(p.amount); });
   const entries = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
   const total = entries.reduce((s,[,v])=>s+v,0);
 
-  const header = `<div style="display:flex; align-items:center; justify-content:space-between; padding:20px 24px 0;">
+  const header = `<div style="padding:20px 24px 0;">
     <div class="month-title" style="margin:0;">Структура расходов</div>
-    <div style="display:flex; align-items:center; gap:6px;">
-      <button class="ghost small" id="chartPrev">←</button>
-      <div style="font-size:13px; font-weight:600; text-transform:capitalize; min-width:130px; text-align:center;">${monthLabel(chartMonth)}</div>
-      <button class="ghost small" id="chartNext">→</button>
-    </div>
   </div>`;
 
   if(!entries.length){
     panel.innerHTML = header + `<div style="padding:16px 24px 24px;">
       <div style="color:var(--ink-soft); font-size:13px;">Расходов за этот месяц пока нет.</div>
     </div>`;
-    wireChartNav();
     return;
   }
 
@@ -477,19 +491,11 @@ function renderExpenseChart(){
         ${legend}
       </div>
     </div>`;
-  wireChartNav();
-}
-
-function wireChartNav(){
-  const prev = document.getElementById('chartPrev');
-  const next = document.getElementById('chartNext');
-  if(prev) prev.onclick = ()=>{ chartMonth.setMonth(chartMonth.getMonth()-1); renderExpenseChart(); };
-  if(next) next.onclick = ()=>{ chartMonth.setMonth(chartMonth.getMonth()+1); renderExpenseChart(); };
 }
 
 function renderSummary(){
   const now = new Date();
-  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const ym = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth()+1).padStart(2,'0')}`;
   const monthStart = ym+'-01';
   const monthEnd = addMonths(ym, 1);
   const thisMonth = payments.filter(p=>p.date.slice(0,7)===ym);
@@ -508,8 +514,8 @@ function renderSummary(){
     <div class="stat balance"><div class="label">Баланс на конец месяца</div><div class="val" style="color:${balEnd<0?'#E8967A':'#F4EFE4'}">${fmt(balEnd)}</div><div class="hint">план + факт за месяц</div></div>
     <div class="stat out"><div class="label">Расходы, этот месяц</div><div class="val">${fmt(outPlanned)}</div><div class="hint">план + факт</div></div>
     <div class="stat in"><div class="label">Поступления, этот месяц</div><div class="val">${fmt(inPlanned)}</div><div class="hint">план + факт</div></div>
-    <div class="stat"><div class="label">Просрочено</div><div class="val" style="color:${overdue?'#D9704F':'#16302C'}">${overdue}</div><div class="hint">платежей не отмечено</div></div>
-    <div class="stat"><div class="label">Ближайшие 7 дней</div><div class="val">${upcoming7}</div><div class="hint">ожидают оплаты</div></div>
+    <div class="stat"><div class="label">Просрочено</div><div class="val" style="color:${overdue?'#D9704F':'#16302C'}">${overdue}</div><div class="hint">платежей не отмечено, независимо от месяца</div></div>
+    <div class="stat"><div class="label">Ближайшие 7 дней</div><div class="val">${upcoming7}</div><div class="hint">ожидают оплаты, независимо от месяца</div></div>
   `;
 }
 
@@ -699,6 +705,8 @@ function openModal(existing){
 
 document.getElementById('addBtn').addEventListener('click', ()=>openModal(null));
 document.getElementById('settingsBtn').addEventListener('click', ()=>openSettingsModal());
+document.getElementById('monthPrev').addEventListener('click', ()=>{ selectedMonth.setMonth(selectedMonth.getMonth()-1); render(); });
+document.getElementById('monthNext').addEventListener('click', ()=>{ selectedMonth.setMonth(selectedMonth.getMonth()+1); render(); });
 document.getElementById('viewSeg').addEventListener('click', e=>{
   const btn = e.target.closest('button[data-view]');
   if(!btn) return;
