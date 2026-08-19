@@ -434,6 +434,7 @@ async function deletePaymentRemote(id){
 
 function subscribeRealtime(){
   if(!CONFIGURED) return;
+  sb.removeAllChannels(); // на случай повторного логина — убираем подписки прошлой сессии
   sb.channel('payments-live')
     .on('postgres_changes', {event:'*', schema:'public', table:'payments'}, ()=>{ loadPayments(); })
     .subscribe();
@@ -920,18 +921,30 @@ if(loginForm){
     const errEl = document.getElementById('loginError');
     errEl.textContent = '';
     btn.disabled = true; btn.textContent = 'Входим…';
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if(error){
-      errEl.textContent = 'Неверный логин или пароль';
+    try{
+      const timeout = new Promise((_, reject)=> setTimeout(()=>reject(new Error('timeout')), 10000));
+      const { data, error } = await Promise.race([
+        sb.auth.signInWithPassword({ email, password }),
+        timeout
+      ]);
+      if(error){
+        errEl.textContent = 'Неверный логин или пароль';
+      } else if(data && data.session){
+        // не полагаемся только на onAuthStateChange — переключаем экран сразу же
+        showApp(data.session.user.email);
+      }
+    }catch(err){
+      errEl.textContent = 'Не удалось войти — проверьте соединение и попробуйте ещё раз';
+    }finally{
       btn.disabled = false; btn.textContent = 'Войти';
     }
-    // при успехе onAuthStateChange сам покажет приложение
   });
 }
 
 const logoutBtn = document.getElementById('logoutBtn');
 if(logoutBtn){
   logoutBtn.addEventListener('click', async ()=>{
+    if(CONFIGURED) sb.removeAllChannels(); // закрываем подписки текущей сессии перед выходом
     await sb.auth.signOut();
   });
 }
