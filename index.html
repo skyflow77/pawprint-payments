@@ -59,9 +59,12 @@
   .seg{display:flex; background:var(--card); border:1px solid var(--line); border-radius:9px; padding:3px; gap:2px;}
   .seg button{border:none; background:transparent; padding:6px 12px; border-radius:6px;}
   .seg button.active{background:var(--ink); color:#fff;}
-  .seg button.ai-tab{background:#E8DFF7; color:#6B4E9C; font-weight:600;}
-  .seg button.ai-tab:hover{background:#DED0F3;}
-  .seg button.ai-tab.active{background:#C9AEED; color:#4A2E7A;}
+  button.ai-tab{
+    background:#E8DFF7; color:#6B4E9C; font-weight:600; border-color:#DCC9F2;
+    border-radius:9px;
+  }
+  button.ai-tab:hover{background:#DED0F3; border-color:#CBB0EA;}
+  button.ai-tab.active{background:#C9AEED; color:#4A2E7A; border-color:#B896E3;}
 
   .month-switcher{
     display:flex; align-items:center; justify-content:center; gap:22px;
@@ -261,8 +264,8 @@
       </div>
     </div>
     <div class="toolbar">
+      <button class="ai-tab" id="aiBtn" data-view="ai">✨ AI</button>
       <div class="seg" id="viewSeg">
-        <button data-view="ai" class="ai-tab">✨ AI</button>
         <button data-view="list" class="active">Список</button>
         <button data-view="calendar">Календарь</button>
       </div>
@@ -791,13 +794,20 @@ document.getElementById('addBtn').addEventListener('click', ()=>openModal(null))
 document.getElementById('settingsBtn').addEventListener('click', ()=>openSettingsModal());
 document.getElementById('monthPrev').addEventListener('click', ()=>{ selectedMonth.setMonth(selectedMonth.getMonth()-1); render(); });
 document.getElementById('monthNext').addEventListener('click', ()=>{ selectedMonth.setMonth(selectedMonth.getMonth()+1); render(); });
+
+function setView(view){
+  currentView = view;
+  document.querySelectorAll('#viewSeg button, #aiBtn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.view===view);
+  });
+  render();
+}
 document.getElementById('viewSeg').addEventListener('click', e=>{
   const btn = e.target.closest('button[data-view]');
   if(!btn) return;
-  currentView = btn.dataset.view;
-  document.querySelectorAll('#viewSeg button').forEach(b=>b.classList.toggle('active', b===btn));
-  render();
+  setView(btn.dataset.view);
 });
+document.getElementById('aiBtn').addEventListener('click', ()=> setView('ai'));
 
 function slugify(label){
   const base = label.toLowerCase().trim().replace(/[^a-zа-я0-9]+/gi,'_').replace(/^_+|_+$/g,'') || 'type';
