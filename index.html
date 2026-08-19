@@ -906,6 +906,10 @@ function showLogin(message){
   appBooted = false;
   document.getElementById('appRoot').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
+  const form = document.getElementById('loginForm');
+  if(form) form.reset();
+  const errEl = document.getElementById('loginError');
+  if(errEl) errEl.textContent = '';
   const hint = document.getElementById('loginHint');
   if(hint) hint.textContent = message || '';
 }
