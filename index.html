@@ -59,6 +59,9 @@
   .seg{display:flex; background:var(--card); border:1px solid var(--line); border-radius:9px; padding:3px; gap:2px;}
   .seg button{border:none; background:transparent; padding:6px 12px; border-radius:6px;}
   .seg button.active{background:var(--ink); color:#fff;}
+  .seg button.ai-tab{background:#E8DFF7; color:#6B4E9C; font-weight:600;}
+  .seg button.ai-tab:hover{background:#DED0F3;}
+  .seg button.ai-tab.active{background:#C9AEED; color:#4A2E7A;}
 
   .month-switcher{
     display:flex; align-items:center; justify-content:center; gap:22px;
@@ -259,6 +262,7 @@
     </div>
     <div class="toolbar">
       <div class="seg" id="viewSeg">
+        <button data-view="ai" class="ai-tab">✨ AI</button>
         <button data-view="list" class="active">Список</button>
         <button data-view="calendar">Календарь</button>
       </div>
@@ -475,7 +479,18 @@ function render(){
   renderMonthSwitcher();
   renderSummary();
   renderExpenseChart();
-  if(currentView==='list') renderList(); else renderCalendar();
+  if(currentView==='list') renderList();
+  else if(currentView==='calendar') renderCalendar();
+  else renderAiPlaceholder();
+}
+
+function renderAiPlaceholder(){
+  const panel = document.getElementById('panel');
+  panel.innerHTML = `<div class="empty">
+    <div style="font-size:32px; margin-bottom:10px;">✨</div>
+    <div style="font-weight:600; color:var(--ink); margin-bottom:4px;">AI-ассистент скоро здесь</div>
+    <div>Раздел в разработке — напишите, что он должен уметь, и мы его соберём.</div>
+  </div>`;
 }
 
 let selectedMonth = new Date(); selectedMonth.setDate(1);
